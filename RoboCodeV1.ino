@@ -9,13 +9,14 @@
 // Things you can change
 #define Rmotor 1
 #define Lmotor 3
-#define paramMax 150;
+#define paramMax 150
+#define numQRD 6
 //Things you cant change
 
 int numVars = 6;
 String params[] = {"P", "I", "D", "G", "Th", "Sp"};
+bool QRDs[numQRD] = {0};
 double vars[] = {0, 0, 0, 0, 0, 0};
-bool QRDs[] = {0, 0, 0, 0, 0, 0}; // 1 if on the tape
 int kp, ki, kd, controlGain, tapeThresh, printCount, screenToggle;
 double speedScale;
 
@@ -44,11 +45,18 @@ void loop() {
     printCount = 0;
   }
 
-    /////////////////////////////////////////////////////////
-   /////////////////Start Robot AI Here ////////////////////
-  /////////////////////////////////////////////////////////
+  /////////////////////////////
+  ///// Robot AI //////////////
+  /////////////////////////////
 
-  
+  if (startbutton() && stopbutton()){
+    phase1();
+  }
+}
+
+void phase1(){
+  while(1);
+  setMotors(255,255);
 }
 
 void menu() {
@@ -62,6 +70,10 @@ void menu() {
 
   while (1) {
 
+    printMenu++;
+    if (printMenu > 40) {
+      printMenu = 0;
+
       param = map(analogRead(7), 0, 1000, 0, numVars - 1);
       if (param > numVars) {
         param = numVars;
@@ -74,7 +86,7 @@ void menu() {
       if (params[param] == "Th") {
         var = analogRead(6);
       } else if (params[param] == "Sp") {
-        var = analogRead(6)/1023.0;
+        var = analogRead(6) / 1023.0;
       } else {
         var = map(analogRead(6), 0 , 1010 , 0 , 150);
       }
@@ -117,6 +129,7 @@ void setMotors(int L, int R) {
 }
 
 void printParams() {
+
   if (stopbutton()) {
     while (stopbutton()) {
 
@@ -144,17 +157,18 @@ void printParams() {
   } else {
     LCD.clear();
     LCD.print("Rs");
-    LCD.print(sensors[3]);
+    LCD.print(QRDs[3]);
     LCD.print(" Ls");
-    LCD.print(sensors[2]);
+    LCD.print(QRDs[2]);
     LCD.setCursor(0, 1);
     LCD.print("T");
     LCD.print(tapeThresh);
   }
 }
 
-//void readQRDs(){
-//  for (int i = 0, i < sensors, i++){
-//    QRDs[i] = analogRead(Ai) > tapeThresh;
-//  }
+void QRDread() {
+  for (int i = 0; i < numQRD; i++) {
+    QRDs[i] = analogRead(40 + i) > tapeThresh;
+  }
+}
 
