@@ -7,17 +7,50 @@
 
 
 // Things you can change
-#define Rmotor 1
-#define Lmotor 3
-#define paramMax 150
-#define numQRD 6
-//Things you cant change
+// Motor Number Outputs
+#define RmotorPin 0
+#define LmotorPin 1
+#define armBaseMotorPin 2
+#define armHingeMotorPin 3
 
-int numVars = 6;
+// Digital IO pins
+  //External Interrupt Pins
+#define LSonarPin 0
+#define RSonarPin 1
+#define interrupt2 2
+#define interrupt3 3
+  // Standard Digital IO pins
+#define QRD0pin 4
+#define QRD1pin 5
+#define QRD2pin 6
+#define QRD3pin 7
+
+#define speedPotPin 8
+
+// Analog IO Pins
+#define IR0pin A0
+#define IR1pin A1
+#define IR2pin A2
+#define IR3pin A3
+#define IR4pin A4
+
+#define hingeMotorPotPin 45
+#define baseMotorPotPin 46
+
+#define paramMax 150
+
+#define numQRD 6
+#define numIR 5
+#define numVars 6
+
+
+
+//Things you shouldnt change
 String params[] = {"P", "I", "D", "G", "Th", "Sp"};
 bool QRDs[numQRD] = {0};
+double IRs[numIR] = {0};
 double vars[] = {0, 0, 0, 0, 0, 0};
-int kp, ki, kd, controlGain, tapeThresh, printCount, screenToggle;
+int kp, ki, kd, controlGain, tapeThresh, printCount;
 double speedScale;
 
 void setup()
@@ -25,15 +58,14 @@ void setup()
 #include <phys253setup.txt>
   Serial.begin(9600) ;
   printCount = 0;
-  screenToggle = 1;
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
 
-  // Push start to go into the menu
-  if (startbutton()) {
-    while (startbutton()) {
+  // Push stop to go into the menu
+  if (stopbutton()) {
+    while (stopbutton()) {
     }
     menu();
   }
@@ -49,20 +81,24 @@ void loop() {
   ///// Robot AI //////////////
   /////////////////////////////
 
-  if (startbutton() && stopbutton()){
+  if (startbutton()) {
     phase1();
   }
 }
 
-void phase1(){
-  while(1);
-  setMotors(255,255);
+void phase1() {
+  LCD.clear();
+  LCD.print("phase 1");
+  while (1){
+//  Serial.println(getQRD(D1));
+  Serial.println(getQRD(QRD0pin));
+  }
 }
 
 void menu() {
   int param, printMenu;
   double var;
-  setMotors(0, 0);
+  setMotors(0, 0, 0);
 
   LCD.clear();
   LCD.print("Menu");
@@ -95,8 +131,15 @@ void menu() {
       LCD.print(params[param]);
       LCD.print(var);
       LCD.setCursor(0, 1);
-      LCD.print(" Last = ");
-      LCD.print(vars[param]);
+      if (params[param] == "Th") {
+        LCD.print("Rs");
+        LCD.print(QRDs[3]);
+        LCD.print(" Ls");
+        LCD.print(QRDs[2]);
+      } else {
+        LCD.print(" Last = ");
+        LCD.print(vars[param]);
+      }
     }
 
     // Exit the menu and save parameters
@@ -123,52 +166,71 @@ void menu() {
   }
 }
 
-void setMotors(int L, int R) {
-  motor.speed(Rmotor, R);
-  motor.speed(Lmotor, L);
+void setMotors(int L, int R, int ctrl) {
+  // Calculates and sets motor speed and control
+  motor.speed(RmotorPin, (R + ctrl)*speedScale);
+  motor.speed(LmotorPin, (L - ctrl)*speedScale);
 }
 
 void printParams() {
+// Print all parameters to screen
+  LCD.clear();
+  LCD.print("S");
+  LCD.print(speedScale);
+  LCD.print(" T");
+  LCD.print(tapeThresh);
+  LCD.print(" G");
+  LCD.print(controlGain);
 
-  if (stopbutton()) {
-    while (stopbutton()) {
-
-    }
-    screenToggle = !screenToggle;
-  }
-
-  if (screenToggle) {
-    LCD.clear();
-    LCD.print("S");
-    LCD.print(speedScale);
-    LCD.print(" T");
-    LCD.print(tapeThresh);
-    LCD.print(" G");
-    LCD.print(controlGain);
-
-    LCD.setCursor(0, 1);
-    LCD.print("P");
-    LCD.print(kp);
-    LCD.print(" I");
-    LCD.print(ki);
-    LCD.print(" D");
-    LCD.print(kd);
-
-  } else {
-    LCD.clear();
-    LCD.print("Rs");
-    LCD.print(QRDs[3]);
-    LCD.print(" Ls");
-    LCD.print(QRDs[2]);
-    LCD.setCursor(0, 1);
-    LCD.print("T");
-    LCD.print(tapeThresh);
-  }
+  LCD.setCursor(0, 1);
+  LCD.print("P");
+  LCD.print(kp);
+  LCD.print(" I");
+  LCD.print(ki);
+  LCD.print(" D");
+  LCD.print(kd);
 }
 
-void QRDread() {
+void getQRDs() {
+  // Reads all QRD sensors and stores boolean values in QRDs array
   for (int i = 0; i < numQRD; i++) {
-    QRDs[i] = analogRead(40 + i) > tapeThresh;
+    QRDs[i] = digitalRead(i);
   }
 }
+
+bool getQRD(int QRDnum) {
+  // Reads the given QRD sensor and stores boolean value in QRDs array 
+  // Returns true or false for the given QRD
+    QRDs[QRDnum] = digitalRead(QRDnum);
+    return QRDs[QRDnum];
+  }
+
+void getIRs(){
+  // Reads all IR sensors and stores values in IRs array
+  for (int IRindex = 0; IRindex < numIR; IRindex++){
+    IRs[IRindex] = analogRead(40 + IRindex);
+  }
+}
+
+int getIR(int IRNum){
+  // Reads the given IR sensor, stores the value in IRs array and returns the value
+  IRs[IRNum] = analogRead(IRNum);
+  return IRs[IRNum];
+}
+
+int getBaseMotorPot(){
+  //Read the analog voltage value of the Potentiometer at the base of the arm
+  // 0 - 1023
+  return analogRead(baseMotorPotPin);
+}
+
+int getHingeMotorPot(){
+  //Read the analog voltage value of the Potentiometer at the hinge of the arm
+  // 0 -1023
+  return analogRead(hingeMotorPotPin);
+}
+
+
+
+
 
