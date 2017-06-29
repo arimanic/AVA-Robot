@@ -34,12 +34,12 @@
 #define IR3pin A3
 #define IR4pin A4
 
-#define hingeMotorPotPin 45
-#define baseMotorPotPin 46
+#define hingeMotorPotPin A5
+#define baseMotorPotPin A6
 
 #define paramMax 150
 
-#define numQRD 6
+#define numQRD 4
 #define numIR 5
 #define numVars 6
 
@@ -47,11 +47,33 @@
 
 //Things you shouldnt change
 String params[] = {"P", "I", "D", "G", "Th", "Sp"};
-bool QRDs[numQRD] = {0};
+bool QRDs[numQRD] = {0}; // High means on tape
 double IRs[numIR] = {0};
 double vars[] = {0, 0, 0, 0, 0, 0};
 int kp, ki, kd, controlGain, tapeThresh, printCount;
 double speedScale;
+
+// PID vars
+// P
+int pCon = 0;
+int innerSpacing = 4;
+int midSpacing = 8;
+int outerSpacing = 12;
+
+int lastError, error;
+String lastTurn;
+bool straight[numQRD] = {0, 1, 1, 0};
+bool sLeft[numQRD] =    {1, 1, 0, 0};
+bool sRight[numQRD] =   {0, 0, 1, 1};
+bool mLeft[numQRD] =    {1, 0, 0, 0};
+bool mRight[numQRD] =   {0, 0, 0, 1};
+bool hardTurn[numQRD] = {0, 0, 0, 0};
+
+// I
+int iCon = 0;
+
+//D
+int dCon = 0;
 
 void setup()
 {
@@ -95,6 +117,67 @@ void phase1() {
   }
 }
 
+void PIDfollow(){
+  //!!!
+  
+  getQRDs();
+  getP4();
+  
+  
+}
+
+int getP4(){
+  // To make the car turn right P is positive.
+  // If P is negative the car turns left
+  if (arrayEquals(QRDs, straight, numQRD)){
+    pCon = 0;
+  } else if (arrayEquals(QRDs, sLeft, numQRD)){
+    pCon = -innerSpacing;
+    lastTurn = "L";
+  } else if (arrayEquals(QRDs, sRight, numQRD)){
+    pCon = innerSpacing;
+    lastTurn = "R";
+  } else if (arrayEquals(QRDs, mLeft, numQRD)){
+    pCon = -midSpacing;
+     lastTurn = "L";
+  } else if (arrayEquals(QRDs, mRight, numQRD)){
+    pCon = midSpacing;
+     lastTurn = "R";
+  } else if (arrayEquals(QRDs, hardTurn, numQRD)){
+    if (lastTurn == "L"){
+      pCon = -outerSpacing;
+    } else if (lastTurn == "R"){
+      pCon = outerSpacing;
+    }
+  }
+}
+
+int getP2(){
+  // To make the car turn right P is positive.
+  // If P is negative the car turns left
+  arrSubset(QRDs,1,2);
+  if (arrayEquals(QRDs, straight, numQRD)){
+    pCon = 0;
+  } else if (arrayEquals(QRDs, sLeft, numQRD)){
+    pCon = -innerSpacing;
+    lastTurn = "L";
+  } else if (arrayEquals(QRDs, sRight, numQRD)){
+    pCon = innerSpacing;
+    lastTurn = "R";
+  } else if (arrayEquals(QRDs, mLeft, numQRD)){
+    pCon = -midSpacing;
+     lastTurn = "L";
+  } else if (arrayEquals(QRDs, mRight, numQRD)){
+    pCon = midSpacing;
+     lastTurn = "R";
+  } else if (arrayEquals(QRDs, hardTurn, numQRD)){
+    if (lastTurn == "L"){
+      pCon = -outerSpacing;
+    } else if (lastTurn == "R"){
+      pCon = outerSpacing;
+    }
+  }
+}
 void menu() {
   int param, printMenu;
   double var;
@@ -230,7 +313,30 @@ int getHingeMotorPot(){
   return analogRead(hingeMotorPotPin);
 }
 
+double getWheelFreq(){
+  //!!!
+}
 
+void servoPos(int pos){
+  
+  if (pos > 180 || pos < 0){
+    LCD.clear();
+    LCD.println("Invalid servo");
+    LCD.print(pos);
+    delay(300);
+    return;
+  } 
 
+RCServo0.write(pos);
+  return;
+}
 
+bool arrayEquals(bool a1[], bool a2[], int len){
+  for (int i = 0; i < len; i++){
+    if (a1[i] != a2[i]){
+      return false;
+    }
+  }
+  return true;
+}
 
