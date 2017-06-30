@@ -53,27 +53,6 @@ double vars[] = {0, 0, 0, 0, 0, 0};
 int kp, ki, kd, controlGain, tapeThresh, printCount;
 double speedScale;
 
-// PID vars
-// P
-int pCon = 0;
-int innerSpacing = 4;
-int midSpacing = 8;
-int outerSpacing = 12;
-
-int lastError, error;
-String lastTurn;
-bool straight[numQRD] = {0, 1, 1, 0};
-bool sLeft[numQRD] =    {1, 1, 0, 0};
-bool sRight[numQRD] =   {0, 0, 1, 1};
-bool mLeft[numQRD] =    {1, 0, 0, 0};
-bool mRight[numQRD] =   {0, 0, 0, 1};
-bool hardTurn[numQRD] = {0, 0, 0, 0};
-
-// I
-int iCon = 0;
-
-//D
-int dCon = 0;
 
 void setup()
 {
@@ -114,12 +93,6 @@ void phase1() {
   while (1){
 //  Serial.println(getQRD(D1));
   LCD.clear();
-  bool arr1[] = {1 , 0 , 1 , 1 , 1};
-  bool arr2[] = {1 , 0 , 1 , 1 , 0};
-  arrSubset(mLeft,1,2,arr1);
-  arrSubset(straight,1,2, arr2);
- bool testBool = arrayEquals(arr1,arr2,2);
-  LCD.print(testBool);
   }
 }
 
