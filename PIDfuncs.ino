@@ -8,10 +8,12 @@ int lastError, error;
 String lastTurn;
 // 4QRD arrays
 bool straight4[numQRD] = {0, 1, 1, 0};
-bool sLeft4[numQRD] =    {1, 1, 0, 0};
-bool sRight4[numQRD] =   {0, 0, 1, 1};
-bool mLeft4[numQRD] =    {1, 0, 0, 0};
-bool mRight4[numQRD] =   {0, 0, 0, 1};
+bool sLeft4[numQRD] =    {0, 1, 0, 0};
+bool sRight4[numQRD] =   {0, 0, 1, 0};
+bool mLeft4[numQRD] =    {1, 1, 0, 0};
+bool mRight4[numQRD] =   {0, 0, 1, 1};
+bool hLeft4[numQRD] =    {1, 0, 0, 0};
+bool hRight4[numQRD] =   {0, 0, 0, 1};
 bool hardTurn4[numQRD] = {0, 0, 0, 0};
 
 // 2QRD arrays
@@ -22,11 +24,20 @@ bool hardTurn2[numQRD] = {0, 0};
 bool QRDs2 [2] = {0};
 
 
-void PIDfollow(){
+void PID4follow(){
   //!!!
   
   getQRDs();
   getP4();
+  
+  
+}
+
+void PID2follow(){
+  //!!!
+  
+  getQRDs();
+  getP2();
   
   
 }
@@ -48,11 +59,17 @@ int getP4(){
   } else if (arrayEquals(QRDs, mRight4, numQRD)){
     pCon = midSpacing;
      lastTurn = "R";
+  } else if (arrayEquals(QRDs, hLeft4, numQRD)){
+    pCon = -outerSpacing;
+     lastTurn = "L";
+  } else if (arrayEquals(QRDs, hRight4, numQRD)){
+    pCon = outerSpacing;
+     lastTurn = "R";
   } else if (arrayEquals(QRDs, hardTurn4, numQRD)){
     if (lastTurn == "L"){
-      pCon = -outerSpacing;
+      pCon = -outerSpacing - innerSpacing;
     } else if (lastTurn == "R"){
-      pCon = outerSpacing;
+      pCon = outerSpacing + innerSpacing;
     }
   }
 }
