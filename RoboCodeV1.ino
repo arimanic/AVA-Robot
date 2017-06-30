@@ -99,7 +99,7 @@ void phase1() {
   LCD.print("phase 1");
   while (1){
 //  Serial.println(getQRD(D1));
-  PID4follow();
+  PID2follow();
   LCD.clear();
   Serial.print(pCon);
   delay(300);
