@@ -24,6 +24,7 @@ void menu() {
 
       if (params[param] == "Th") {
         var = analogRead(6);
+        getQRDs();
       } else if (params[param] == "Sp") {
         var = analogRead(6) / 1023.0;
       } else {
@@ -36,9 +37,9 @@ void menu() {
       LCD.setCursor(0, 1);
       if (params[param] == "Th") {
         LCD.print("Rs");
-        LCD.print(QRDs[3]);
-        LCD.print(" Ls");
         LCD.print(QRDs[2]);
+        LCD.print(" Ls");
+        LCD.print(QRDs[1]);
       } else {
         LCD.print(" Last = ");
         LCD.print(vars[param]);

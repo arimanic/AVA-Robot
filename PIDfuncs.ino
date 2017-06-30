@@ -1,6 +1,5 @@
 // PID vars
 // P
-int pCon = 0;
 int innerSpacing = 4;
 int midSpacing = 8;
 int outerSpacing = 12;
@@ -20,12 +19,8 @@ bool straight2[numQRD] = {1, 1};
 bool sLeft2[numQRD] =    {1, 0};
 bool sRight2[numQRD] =   {0, 1};
 bool hardTurn2[numQRD] = {0, 0};
+bool QRDs2 [2] = {0};
 
-// I
-int iCon = 0;
-
-//D
-int dCon = 0;
 
 void PIDfollow(){
   //!!!
@@ -65,15 +60,16 @@ int getP4(){
 int getP2(){
   // To make the car turn right P is positive.
   // If P is negative the car turns left
-  if (arrayEquals(QRDs, straight2, numQRD)){
+  arraySubset(QRDs , 1 , 2 , QRDs2);
+  if (arrayEquals(QRDs2, straight2, numQRD)){
     pCon = 0;
-  } else if (arrayEquals(QRDs, sLeft2, numQRD)){
+  } else if (arrayEquals(QRDs2, sLeft2, numQRD)){
     pCon = -innerSpacing;
     lastTurn = "L";
-  } else if (arrayEquals(QRDs, sRight2, numQRD)){
+  } else if (arrayEquals(QRDs2, sRight2, numQRD)){
     pCon = innerSpacing;
     lastTurn = "R";
-  } else if (arrayEquals(QRDs, hardTurn2, numQRD)){
+  } else if (arrayEquals(QRDs2, hardTurn2, numQRD)){
     if (lastTurn == "L"){
       pCon = -midSpacing;
     } else if (lastTurn == "R"){

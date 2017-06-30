@@ -53,6 +53,13 @@ double vars[] = {0, 0, 0, 0, 0, 0};
 int kp, ki, kd, controlGain, tapeThresh, printCount;
 double speedScale;
 
+// PID vars
+// P
+int pCon = 0;
+// I
+int iCon = 0;
+// D
+int dCon = 0;
 
 void setup()
 {
@@ -92,7 +99,10 @@ void phase1() {
   LCD.print("phase 1");
   while (1){
 //  Serial.println(getQRD(D1));
+  PIDfollow();
   LCD.clear();
+  Serial.print(pCon);
+  delay(300);
   }
 }
 
