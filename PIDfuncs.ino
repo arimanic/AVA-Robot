@@ -75,9 +75,9 @@ int getP2(){
     lastTurn = "R";
   } else if (arrayEquals(QRDs, hardTurn2, numQRD)){
     if (lastTurn == "L"){
-      pCon = -outerSpacing;
+      pCon = -midSpacing;
     } else if (lastTurn == "R"){
-      pCon = outerSpacing;
+      pCon = midSpacing;
     }
   }
 }
