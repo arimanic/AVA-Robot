@@ -8,7 +8,7 @@
 
 // Things you can change
 // Motor Number Outputs
-#define RmotorPin 0
+#define RmotorPin 2 //// !!!!!! should be 0. 2 for testing
 #define LmotorPin 1
 #define armBaseMotorPin 2
 #define armHingeMotorPin 3
@@ -61,6 +61,7 @@ int iCon = 0;
 // D
 int dCon = 0;
 
+
 void setup()
 {
 #include <phys253setup.txt>
@@ -95,13 +96,25 @@ void loop() {
 }
 
 void phase1() {
+
+  
+ 
   LCD.clear();
   LCD.print("phase 1");
-  while (1){
-//  Serial.println(getQRD(D1));
-  PID2follow();
+  while (1){    
+  PID4follow();
   LCD.clear();
-  Serial.print(pCon);
+
+
+
+if (stopbutton()) {
+    while (stopbutton()) {
+    }
+    menu();
+  }
+  
+  LCD.print(pCon);
+  Serial.println(dCon);
   delay(300);
   }
 }

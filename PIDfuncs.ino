@@ -3,9 +3,13 @@
 int innerSpacing = 4;
 int midSpacing = 8;
 int outerSpacing = 12;
-
-int lastError, error;
 String lastTurn;
+
+// D
+int lastError, error , recentError;
+int prevDTime = 0;
+int curDTime = 0;
+
 // 4QRD arrays
 bool straight4[numQRD] = {0, 1, 1, 0};
 bool sLeft4[numQRD] =    {0, 1, 0, 0};
@@ -29,7 +33,9 @@ void PID4follow(){
   
   getQRDs();
   getP4();
-  
+  getD();
+
+  setMotors(255,255,controlGain*(pCon+dCon));
   
 }
 
@@ -38,13 +44,14 @@ void PID2follow(){
   
   getQRDs();
   getP2();
-  
+  getD();
   
 }
 
 int getP4(){
   // To make the car turn right P is positive.
   // If P is negative the car turns left
+  // Sets the error to be used by D control
   if (arrayEquals(QRDs, straight4, numQRD)){
     pCon = 0;
   } else if (arrayEquals(QRDs, sLeft4, numQRD)){
@@ -72,6 +79,9 @@ int getP4(){
       pCon = outerSpacing + innerSpacing;
     }
   }
+  error = pCon;
+  pCon = kp*pCon;
+  return pCon;
 }
 
 int getP2(){
@@ -93,5 +103,25 @@ int getP2(){
       pCon = midSpacing;
     }
   }
+  
+error = pCon;
+  pCon = kp*pCon;
+  return pCon;
+}
+
+double getD(){
+  // To make the car turn right D is positive.
+  // If D is negative the car turns left
+  // error is set by getPx()
+
+  if (lastError != error) {
+    recentError = lastError;
+    prevDTime = curDTime;
+    curDTime = 0;
+  }
+  curDTime++;
+  lastError = error;
+  dCon = ((double)kd*(error - recentError))/((double) (prevDTime + curDTime));
+  return dCon;
 }
 
