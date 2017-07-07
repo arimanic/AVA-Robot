@@ -138,7 +138,7 @@ double getWheelFreq(){
   //!!!
 }
 
-void servoPos(int pos){
+void setServoPos(int pos){
   
   if (pos > 180 || pos < 0){
     LCD.clear();

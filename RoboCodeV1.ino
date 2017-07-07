@@ -3,9 +3,6 @@
 #include <math.h>
 #include <string.h>
 
-
-
-
 // Things you can change
 // Motor Number Outputs
 #define RmotorPin 2 //// !!!!!! should be 0. 2 for testing
@@ -42,8 +39,6 @@
 #define numQRD 4
 #define numIR 5
 #define numVars 6
-
-
 
 //Things you shouldnt change
 String params[] = {"P", "I", "D", "G", "Th", "Sp"};
