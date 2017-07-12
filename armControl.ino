@@ -4,27 +4,6 @@
 // On each iteration the loop reads the displacement from the desired position and produces a 
 // motor speed towards the desired position. The speed is proportional to the displacement.
 
-// define a numerical value for each position
-// define the voltage reading of the upper and lower Pot for each position.
-// There are 4 positions: Driving   (D)
-//                        Collecting (C)
-//                        Fishing   (F)
-//                        Zipline   (Z)
-#define drivePos 0
-#define baseD 0
-#define hingeD 5
-
-#define collectPos 1
-#define baseC 0
-#define hingeC 5
-
-#define fishPos 2
-#define baseF 0
-#define hingeF 5
-
-#define zipPos 3
-#define baseZ 5
-#define hingeZ 0
 
 // define a threshold for measurement error. It is unlikely to read the pot when it is at the exact value defined above.
 // instead try to catch it when it is close;
@@ -34,6 +13,17 @@
 #define armSpeed 50
 
 
+<<<<<<< HEAD
+// define a threshold for measurement error. It is unlikely to read the pot when it is at the exact value defined above.
+// instead try to catch it when it is close;
+#define voltageRange 0.1
+
+// define a scaling factor for the movement speed of the arm. motor speed = armSpeed*displacement
+#define armSpeed 50
+
+
+=======
+>>>>>>> 95b6448c1f3542f930c5ff6725ad194716e82b7f
 double getRelLowerPos(int pos) {
   // Determines if the lower portion of the arm is at the position passed as pos
   // returns a negative number if the position is low. Positive number if high. 0 if at the right spot
@@ -46,6 +36,7 @@ double getRelLowerPos(int pos) {
     return voltRead - baseF;
   } else if (pos == zipPos) {
     return voltRead - baseZ;
+<<<<<<< HEAD
   }
 }
 
@@ -64,6 +55,26 @@ bool getRelUpperPos(int pos) {
   }
 }
 
+=======
+  }
+}
+
+double getRelUpperPos(int pos) {
+  // Determines if the upper portion of the arm is at the position passed as pos
+  // returns a negative number if the position is low. Positive number if high. 0 if at the right spot
+  double voltRead = getHingeMotorPot();
+  if (pos == drivePos) {
+    return voltRead - hingeD;
+  } else if (pos == collectPos) {
+    return voltRead - hingeC;
+  } else if (pos == fishPos) {
+    return voltRead - hingeF;
+  } else if (pos == zipPos) {
+    return voltRead - hingeZ;
+  }
+}
+
+>>>>>>> 95b6448c1f3542f930c5ff6725ad194716e82b7f
 bool atLowerPos(int pos) {
   //Determine if the lower portion of the arm are in the position passed
   double relLower = getRelLowerPos(pos);
@@ -90,11 +101,44 @@ void moveLowerArm(int pos) {
 }
 
 void moveUpperArm(int pos) {
+<<<<<<< HEAD
   while (atUpperPos(pos)) {
+=======
+  while (!atUpperPos(pos)) {
+>>>>>>> 95b6448c1f3542f930c5ff6725ad194716e82b7f
     motor.speed(armHingeMotorPin, armSpeed * getRelUpperPos(pos));
   }
   motor.stop(armHingeMotorPin);
   return;
+<<<<<<< HEAD
+=======
+}
+
+void moveBaseServo(int val){
+ // Moves the base servo to the desired position. 90 is pointed forward
+  if (val > 180 || val < 0){
+    LCD.clear();
+    LCD.println("Invalid servo");
+    LCD.print(val);
+    delay(300);
+    return;
+  } 
+
+RCServo0.write(val);
+  return;
+}
+
+double getBaseMotorPot(){
+  //Read the analog voltage value of the Potentiometer at the base of the arm
+  // 0 - 5
+  return analogRead(armBasePotPin)*5.0/1024.0;
+}
+
+double getHingeMotorPot(){
+  //Read the analog voltage value of the Potentiometer at the hinge of the arm
+  // 0 -5
+  return analogRead(armHingePotPin)*5.0/1024.0;
+>>>>>>> 95b6448c1f3542f930c5ff6725ad194716e82b7f
 }
 
 void moveBaseServo(int val){

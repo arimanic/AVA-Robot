@@ -14,7 +14,7 @@
   //External Interrupt Pins
 #define LSonarPin 0
 #define RSonarPin 1
-#define interrupt2 2
+#define distanceCounter 2
 #define interrupt3 3
   // Standard Digital IO pins
 #define QRD0pin 4
@@ -31,8 +31,8 @@
 #define IR3pin A3
 #define IR4pin A4
 
-#define hingeMotorPotPin A5
-#define baseMotorPotPin A6
+#define armHingePotPin A5
+#define armBasePotPin A6
 
 #define paramMax 150
 
@@ -40,78 +40,27 @@
 #define numIR 5
 #define numVars 6
 
-//Things you shouldnt change
-String params[] = {"P", "I", "D", "G", "Th", "Sp"};
-bool QRDs[numQRD] = {0}; // High means on tape
-double IRs[numIR] = {0};
-double vars[] = {0, 0, 0, 0, 0, 0};
-int kp, ki, kd, controlGain, tapeThresh, printCount;
-double speedScale;
 
-// PID vars
-// P
-int pCon = 0;
-// I
-int iCon = 0;
-// D
-int dCon = 0;
+// define a numerical value for each arm position
+// define the voltage reading of the upper and lower Pot for each position.
+// There are 4 positions: Driving   (D)
+//                        Collecting (C)
+//                        Fishing   (F)
+//                        Zipline   (Z)
+#define drivePos 0
+#define baseD 0
+#define hingeD 5
 
+#define collectPos 1
+#define baseC 0
+#define hingeC 5
 
-void setup()
-{
-#include <phys253setup.txt>
-  Serial.begin(9600) ;
-  printCount = 0;
-}
+#define fishPos 2
+#define baseF 0
+#define hingeF 5
 
-void loop() {
-  // put your main code here, to run repeatedly:
-
-  // Push stop to go into the menu
-  if (stopbutton()) {
-    while (stopbutton()) {
-    }
-    menu();
-  }
-
-  // This section is concerned with printing variables to the screen
-  printCount++;
-  if (printCount > 40) {
-    printParams();
-    printCount = 0;
-  }
-
-  /////////////////////////////
-  ///// Robot AI //////////////
-  /////////////////////////////
-
-  if (startbutton()) {
-    phase1();
-  }
-}
-
-void phase1() {
-
-  
- 
-  LCD.clear();
-  LCD.print("phase 1");
-  while (1){    
-  PID4follow();
-  LCD.clear();
-
-
-
-if (stopbutton()) {
-    while (stopbutton()) {
-    }
-    menu();
-  }
-  
-  LCD.print(pCon);
-  Serial.println(dCon);
-  delay(300);
-  }
-}
+#define zipPos 3
+#define baseZ 5
+#define hingeZ 0
 
 

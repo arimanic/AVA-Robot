@@ -55,7 +55,7 @@ void menu() {
       kd = (int) vars[2];
       controlGain = (int) vars[3];
       speedScale =  vars[5];
-      tapeThresh = (int) vars[4];
+      irThresh = (int) vars[4];
       LCD.clear();
       return;
 
@@ -82,7 +82,7 @@ void printParams() {
   LCD.print("S");
   LCD.print(speedScale);
   LCD.print(" T");
-  LCD.print(tapeThresh);
+  LCD.print(irThresh);
   LCD.print(" G");
   LCD.print(controlGain);
 
@@ -108,31 +108,6 @@ bool getQRD(int QRDnum) {
     QRDs[QRDnum] = digitalRead(QRDnum);
     return QRDs[QRDnum];
   }
-
-void getIRs(){
-  // Reads all IR sensors and stores values in IRs array
-  for (int IRindex = 0; IRindex < numIR; IRindex++){
-    IRs[IRindex] = analogRead(40 + IRindex);
-  }
-}
-
-int getIR(int IRNum){
-  // Reads the given IR sensor, stores the value in IRs array and returns the value
-  IRs[IRNum] = analogRead(IRNum);
-  return IRs[IRNum];
-}
-
-int getBaseMotorPot(){
-  //Read the analog voltage value of the Potentiometer at the base of the arm
-  // 0 - 1023
-  return analogRead(baseMotorPotPin);
-}
-
-int getHingeMotorPot(){
-  //Read the analog voltage value of the Potentiometer at the hinge of the arm
-  // 0 -1023
-  return analogRead(hingeMotorPotPin);
-}
 
 double getWheelFreq(){
   //!!!
