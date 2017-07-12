@@ -20,6 +20,9 @@ void setup()
 {
 #include <phys253setup.txt>
   Serial.begin(9600) ;
+  enableExternalInterrupt(INT1, LOW);
+  enableExternalInterrupt(INT2, LOW);
+  enableExternalInterrupt(INT3, RISING);
   printCount = 0;
 }
 

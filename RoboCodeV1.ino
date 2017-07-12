@@ -1,3 +1,8 @@
+#include <motor.h>
+#include <phys253.h>
+#include <phys253pins.h>
+#include <ServoTINAH.h>
+
 #include <phys253.h>
 #include <LiquidCrystal.h>
 #include <math.h>
