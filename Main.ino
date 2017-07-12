@@ -15,18 +15,21 @@ int iCon = 0;
 // D
 int dCon = 0;
 
-
+// TIMING VARIABLE
+int timeElapsed = 0;
 void setup()
 {
 #include <phys253setup.txt>
+LCD.clear();
   Serial.begin(9600) ;
-  enableExternalInterrupt(INT1, LOW);
-  enableExternalInterrupt(INT2, LOW);
+  enableExternalInterrupt(INT1, CHANGE);
+  enableExternalInterrupt(INT2, CHANGE);
   enableExternalInterrupt(INT3, RISING);
+  attachTimerInterrupt(1, timer1ISR);
   printCount = 0;
 }
 
-void loop() {
+void loop() { // !!! final version. working as intended do not modify
   // put your main code here, to run repeatedly:
 
   // Push stop to go into the menu
@@ -48,29 +51,55 @@ void loop() {
   /////////////////////////////
 
   if (startbutton()) {
+    attachISR(INT1, ISR1);
+    attachISR(INT2, ISR2);
+    attachISR(INT3, ISR3);
+    timeElapsed = 0;
     phase1();
   }
 }
 
-void phase1() {
+void phase1() { //!!! being used for testing functions right now
 
-  LCD.clear();
-  LCD.print("phase 1");
   while (1){    
   PID4follow();
   moveUpperArm(drivePos);
   LCD.clear();
-
-
+  LCD.print(timeElapsed);
+  delay(500);
 
 if (stopbutton()) {
     while (stopbutton()) {
     }
     menu();
   }
-  
-  LCD.print(pCon);
-  Serial.println(dCon);
-  delay(300);
+
   }
 }
+
+void timer1ISR(){
+  timeElapsed++;
+}
+
+
+void ISR1(){//!!! make this work for sonar1
+  LCD.clear();
+  LCD.print("Vitor sucks");
+  LCD.setCursor(0,1);
+  LCD.print("at foosball");
+}
+
+void ISR2(){//!!! make this work for sonar2
+  LCD.clear();
+  LCD.print("Vitor sucks");
+  LCD.setCursor(0,1);
+  LCD.print("at foosball");
+}
+
+void ISR3(){//!!! make this work for wheel measurement
+  LCD.clear();
+  LCD.print("Vitor sucks");
+  LCD.setCursor(0,1);
+  LCD.print("at foosball");
+}
+
