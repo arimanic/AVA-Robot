@@ -1,22 +1,13 @@
 //Menu controlled variables
 String params[] = {"P", "I", "D", "G", "Th", "Sp"};
 double vars[] = {0, 0, 0, 0, 0, 0};
-int kp, ki, kd, controlGain, printCount;
+int kp, ki, kd, controlGain, irThresh;
 double speedScale;
 
 //IR vars
 bool alrdyStop;
-int irThresh;
+//int irThresh;
 double IRs[numIR] = {0};
-
-// PID vars
-bool QRDs[numQRD] = {0}; // High means on tape
-// P
-int pCon = 0;
-// I
-int iCon = 0;
-// D
-int dCon = 0;
 
 // TIMING VARIABLE
 int timeElapsed = 0;
@@ -27,6 +18,9 @@ String offEdgeTurn;
 
 // Wheel interrupt variables
 int wheelRotations;
+
+// Misc variables
+int printCount;
 
 void setup()
 {
@@ -90,7 +84,7 @@ void phase1() { //!!! being used for testing functions right now
       }
     } else {
   
-      PID4follow();
+      PID4follow(kp, ki, kd ,controlGain);
       moveUpperArm(drivePos);
       LCD.clear();
       LCD.print(timeElapsed);

@@ -1,3 +1,4 @@
+
 void menu() {
   int param, printMenu;
   double var;
@@ -28,7 +29,7 @@ void menu() {
       } else if (params[param] == "Sp") {
         var = analogRead(6) / 1023.0;
       } else {
-        var = map(analogRead(6), 0 , 1023 , 0 , 150);
+        var = map(analogRead(6), 0 , 1023 , 0 , paramMax);
       }
 
       LCD.clear();
