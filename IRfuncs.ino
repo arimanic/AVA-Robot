@@ -1,3 +1,4 @@
+extern bool alrdyStop;
 extern int irThresh;
 extern double IRs[numIR];
 

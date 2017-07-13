@@ -1,13 +1,16 @@
-//Things you shouldnt change
+//Menu controlled variables
 String params[] = {"P", "I", "D", "G", "Th", "Sp"};
-bool QRDs[numQRD] = {0}; // High means on tape
 double vars[] = {0, 0, 0, 0, 0, 0};
 int kp, ki, kd, controlGain, printCount;
 double speedScale;
+
+//IR vars
+bool alrdyStop;
 int irThresh;
 double IRs[numIR] = {0};
 
 // PID vars
+bool QRDs[numQRD] = {0}; // High means on tape
 // P
 int pCon = 0;
 // I
@@ -22,15 +25,24 @@ int timeElapsed = 0;
 bool sonarInterrupt;
 String offEdgeTurn;
 
+// Wheel interrupt variables
+int wheelRotations;
+
 void setup()
 {
 #include <phys253setup.txt>
   LCD.clear();
   Serial.begin(9600) ;
+  
   enableExternalInterrupt(INT1, CHANGE);
   enableExternalInterrupt(INT2, CHANGE);
-  enableExternalInterrupt(INT3, RISING);
-  attachTimerInterrupt(60000, timer1ISR);
+  enableExternalInterrupt(INT3, FALLING);
+  attachTimerInterrupt(1, timer1ISR);
+
+  alrdyStop = false;
+
+  wheelRotations = 0;
+  
   printCount = 0;
 }
 
@@ -77,19 +89,8 @@ void phase1() { //!!! being used for testing functions right now
         setMotors(255 , 0 , 0); // hard right turn
       }
     } else {
-
-      motor.speed(0, 255);
-  motor.speed(1, 255);
-  motor.speed(2, 255);
-  motor.speed(3, 255);
-
-  delay(1000);
-  motor.speed(0, 0);
-  motor.speed(1, 0);
-  motor.speed(2, 0);
-  motor.speed(3, 0);
   
- //     PID4follow();
+      PID4follow();
       moveUpperArm(drivePos);
       LCD.clear();
       LCD.print(timeElapsed);
@@ -120,9 +121,6 @@ void ISR2() { //!!! make this work for Rsonar
 }
 
 void ISR3() { //!!! make this work for wheel measurement
-  LCD.clear();
-  LCD.print("Vitor sucks");
-  LCD.setCursor(0, 1);
-  LCD.print("at foosball");
+  wheelRotations++;
 }
 
