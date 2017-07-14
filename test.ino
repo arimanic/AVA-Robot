@@ -1,1 +1,4 @@
+void findCross(int crossNum){
+  
+}
 

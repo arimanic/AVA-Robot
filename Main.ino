@@ -66,8 +66,8 @@ void phase1() {
   timeElapsed = 0;
   alrdyStop = false;
 
-  moveUpperArm(drivePos);
-  moveLowerArm(drivePos);
+  //moveUpperArm(drivePos);
+  //moveLowerArm(drivePos);
   // end of setup
 
 
@@ -79,7 +79,9 @@ void phase1() {
         setMotors(255 , 0 , 0); // hard right turn
       }
     } else if (gateStop() && !alrdyStop) {
+      while(gateStop()){
       setMotors(0, 0, 0);
+      }
       alrdyStop = true;
     } else if (atCross()) {
       setMotors(0, 0, 0);
@@ -97,7 +99,7 @@ void phase1() {
 }
 
 void phase2(){
-
+  
 }
 
 
