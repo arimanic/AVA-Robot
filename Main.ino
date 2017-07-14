@@ -1,33 +1,22 @@
 //Menu controlled variables
-String params[] = {"P", "I", "D", "G", "Th", "Sp"};
+String params[] = {"P", "I", "D", "G", "T", "S"};
 double vars[] = {0, 0, 0, 0, 0, 0};
-int kp, ki, kd, controlGain, irThresh;
+int kp, ki, kd, controlGain; //irThresh
 double speedScale;
 
-//IR vars
-bool alrdyStop;
-//int irThresh;
-double IRs[numIR] = {0};
+////IR vars
+//bool alrdyStop;
+////int irThresh;
+//double IRs[numIR] = {0};
 
-// TIMING VARIABLE
-int timeElapsed = 0;
 
-// Sonar interrupt variables
-bool sonarInterrupt;
-String offEdgeTurn;
-
-// Wheel interrupt variables
-int wheelRotations;
-
-// Misc variables
-int printCount;
 
 void setup()
 {
 #include <phys253setup.txt>
   LCD.clear();
   Serial.begin(9600) ;
-  
+
   enableExternalInterrupt(INT1, CHANGE);
   enableExternalInterrupt(INT2, CHANGE);
   enableExternalInterrupt(INT3, FALLING);
@@ -36,13 +25,12 @@ void setup()
   alrdyStop = false;
 
   wheelRotations = 0;
-  
+
   printCount = 0;
 }
 
 void loop() { // !!! final version. working as intended do not modify
   // put your main code here, to run repeatedly:
-
   // Push stop to go into the menu
   if (stopbutton()) {
     while (stopbutton()) {
@@ -53,7 +41,7 @@ void loop() { // !!! final version. working as intended do not modify
   // This section is concerned with printing variables to the screen
   printCount++;
   if (printCount > 40) {
-    printParams();
+    printParams(params , vars);
     printCount = 0;
   }
 
@@ -65,13 +53,21 @@ void loop() { // !!! final version. working as intended do not modify
   }
 }
 
-void phase1() { //!!! being used for testing functions right now
+void phase1() {
+/* Phase 1 moves the robot from the start point to the ring junction. 
+ *  It stops the robot at the 10 kHz gate, but only once. 
+ *  Edge sensors are used through external interrupts to prevent 
+ */
+  
   // Phase 1 setup
   attachISR(INT1, ISR1);
   attachISR(INT2, ISR2);
   attachISR(INT3, ISR3);
   timeElapsed = 0;
+  alrdyStop = false;
 
+  moveUpperArm(drivePos);
+  moveLowerArm(drivePos);
   // end of setup
 
 
@@ -82,39 +78,26 @@ void phase1() { //!!! being used for testing functions right now
       } else  {
         setMotors(255 , 0 , 0); // hard right turn
       }
+    } else if (gateStop() && !alrdyStop) {
+      setMotors(0, 0, 0);
+      alrdyStop = true;
+    } else if (atCross()) {
+      setMotors(0, 0, 0);
+      phase2();
     } else {
-  
-      PID4follow(kp, ki, kd ,controlGain);
-      moveUpperArm(drivePos);
-      LCD.clear();
-      LCD.print(timeElapsed);
-      delay(500);
+      PID4follow(kp, ki, kd , controlGain);
+    }
 
-      if (stopbutton()) {
-        while (stopbutton()) {
-        }
-        menu();
+    if (stopbutton()) {
+      while (stopbutton()) {
       }
+      menu();
     }
   }
 }
 
-void timer1ISR() {
-  timeElapsed++;
+void phase2(){
+
 }
 
-
-void ISR1() { //!!! make this work for Lsonar
-  sonarInterrupt = !sonarInterrupt;
-  offEdgeTurn = "R";
-}
-
-void ISR2() { //!!! make this work for Rsonar
-  sonarInterrupt = !sonarInterrupt;
-  offEdgeTurn = "R";
-}
-
-void ISR3() { //!!! make this work for wheel measurement
-  wheelRotations++;
-}
 

@@ -1,11 +1,14 @@
-extern bool alrdyStop;
-extern int irThresh;
-extern double IRs[numIR];
+double IRs[numIR] = {0};
+int irThresh;
+
+void setIRThresh(int thresh){
+  irThresh = thresh;
+  return;
+}
 
 // Function for stopping at the 10/1kHz gate
 // returns true if any of the IR sensors read a value higher than the threshold set in the menu
 bool gateStop() {
-  if (!alrdyStop) {
     getIRs();
     for (int i = 0; i < numIR; i++) {
       if (IRs[i] > irThresh) {
@@ -13,9 +16,6 @@ bool gateStop() {
       }
     }
     return false;
-  } else {
-    return false;
-  }
 }
 
 void getIRs() {

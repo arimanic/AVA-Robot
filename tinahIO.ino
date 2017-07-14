@@ -23,10 +23,9 @@ void menu() {
         param = 0;
       }
 
-      if (params[param] == "Th") {
+      if (params[param] == "T") {
         var = analogRead(6);
-        getQRDs();
-      } else if (params[param] == "Sp") {
+      } else if (params[param] == "S") {
         var = analogRead(6) / 1023.0;
       } else {
         var = map(analogRead(6), 0 , 1023 , 0 , paramMax);
@@ -36,11 +35,11 @@ void menu() {
       LCD.print(params[param]);
       LCD.print(var);
       LCD.setCursor(0, 1);
-      if (params[param] == "Th") {
+      if (params[param] == "T") {
         LCD.print("Rs");
-        LCD.print(QRDs[2]);
+        LCD.print(digitalRead(QRD1pin));
         LCD.print(" Ls");
-        LCD.print(QRDs[1]);
+        LCD.print(digitalRead(QRD2pin));
       } else {
         LCD.print(" Last = ");
         LCD.print(vars[param]);
@@ -57,6 +56,7 @@ void menu() {
       controlGain = (int) vars[3];
       speedScale =  vars[5];
       irThresh = (int) vars[4];
+      // setIRThresh();
       LCD.clear();
       return;
 
@@ -77,46 +77,10 @@ void setMotors(int L, int R, int ctrl) {
   motor.speed(LmotorPin, (L - ctrl)*speedScale);
 }
 
-void printParams() {
-// Print all parameters to screen
-  LCD.clear();
-  LCD.print("S");
-  LCD.print(speedScale);
-  LCD.print(" T");
-  LCD.print(irThresh);
-  LCD.print(" G");
-  LCD.print(controlGain);
-
-  LCD.setCursor(0, 1);
-  LCD.print("P");
-  LCD.print(kp);
-  LCD.print(" I");
-  LCD.print(ki);
-  LCD.print(" D");
-  LCD.print(kd);
-}
-
-void getQRDs() {
-  // Reads all QRD sensors and stores boolean values in QRDs array
-  for (int i = 0; i < numQRD; i++) {
-    QRDs[i] = digitalRead(i);
-  }
-}
-
-bool getQRD(int QRDnum) {
-  // Reads the given QRD sensor and stores boolean value in QRDs array 
-  // Returns true or false for the given QRD
-    QRDs[QRDnum] = digitalRead(QRDnum);
-    return QRDs[QRDnum];
-  }
-
-double getWheelFreq(){
-  //!!!
-}
 
 void setServoPos(int pos){
   
-  if (pos > 180 || pos < 0){
+  if (pos > 179 || pos < 0){
     LCD.clear();
     LCD.println("Invalid servo");
     LCD.print(pos);
@@ -127,5 +91,37 @@ void setServoPos(int pos){
 RCServo0.write(pos);
   return;
 }
+
+void printParams(String names[] , double vals[]) {
+// Print all parameters to screen
+  LCD.clear();
+  LCD.print(names[0]);
+  LCD.print((int)vals[0]);
+  LCD.print(" ");
+  
+  LCD.print(names[1]);
+  LCD.print((int)vals[1]);
+  LCD.print(" ");
+  
+  LCD.print(names[2]);
+  LCD.print((int)vals[2]);
+  LCD.print(" ");
+
+  LCD.setCursor(0, 1);
+  LCD.print(names[3]);
+  LCD.print((int)vals[3]);
+  LCD.print(" ");
+  
+  LCD.print(names[4]);
+  LCD.print((int)vals[4]);
+  LCD.print(" ");
+  
+  LCD.print(names[5]);
+  LCD.print(vals[5]);
+  LCD.print(" ");
+}
+
+
+
 
 

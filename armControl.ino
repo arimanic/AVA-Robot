@@ -78,7 +78,7 @@ void moveUpperArm(int pos) {
 
 void moveBaseServo(int val){
  // Moves the base servo to the desired position. 90 is pointed forward
-  if (val > 180 || val < 0){
+  if (val > 179 || val < 0){
     LCD.clear();
     LCD.println("Invalid servo");
     LCD.print(val);
