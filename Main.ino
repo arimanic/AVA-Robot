@@ -1,7 +1,7 @@
 //Menu controlled variables
 String params[] = {"P", "I", "D", "G", "T", "S"};
 double vars[] = {0, 0, 0, 0, 0, 0};
-int kp, ki, kd, controlGain; //irThresh
+//irThresh
 double speedScale;
 
 ////IR vars
@@ -87,7 +87,7 @@ void phase1() {
       setMotors(0, 0, 0);
       phase2();
     } else {
-      PID4follow(kp, ki, kd , controlGain);
+      PID4follow();
     }
 
     if (stopbutton()) {

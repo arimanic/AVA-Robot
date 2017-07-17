@@ -50,10 +50,10 @@ void menu() {
     if (stopbutton()) {
       while (stopbutton()) {
       }
-      kp = (int) vars[0];
-      ki = (int) vars[1];
-      kd = (int) vars[2];
-      controlGain = (int) vars[3];
+      setKP((int) vars[0]);
+       setKI((int) vars[1]);
+       setKD((int) vars[2]);
+      setControlGain((int) vars[3]);
       speedScale =  vars[5];
       irThresh = (int) vars[4];
       // setIRThresh();

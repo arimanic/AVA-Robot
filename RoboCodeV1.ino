@@ -25,7 +25,6 @@ int wheelRotations;
 
 // Misc variables
 int printCount;
-int crossPos;
 
 void timer1ISR() {
   timeElapsed++;
