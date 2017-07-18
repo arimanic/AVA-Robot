@@ -6,6 +6,10 @@ void setIRThresh(int thresh){
   return;
 }
 
+int getIRThresh(){
+  return irThresh;
+}
+
 // Function for stopping at the 10/1kHz gate
 // returns true if any of the IR sensors read a value higher than the threshold set in the menu
 bool gateStop() {

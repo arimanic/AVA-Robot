@@ -7,8 +7,6 @@
 #include <PID.h>
 #include <ServoTINAH.h>
 
-
-
 // Variables for internal interrupts and logic checks. 
 // All of these should be set during setup or phase transitions
 
@@ -19,7 +17,7 @@ bool alrdyStop;
 int timeElapsed;
 
 // Sonar interrupt variables
-bool sonarInterrupt = true;
+bool sonarInterrupt = false;
 String offEdgeTurn;
 
 

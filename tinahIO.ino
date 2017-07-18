@@ -4,6 +4,14 @@ void menu() {
   double var;
   setMotors(0, 0, 0);
 
+  // Load in preloaded variables
+  vars[0] = getKP();
+  vars[1] = getKI();
+  vars[2] = getKD();
+  vars[3] = getControlGain();
+  vars[4] = getIRThresh();
+  vars[5] = getSpeedScale();
+
   LCD.clear();
   LCD.print("Menu");
   delay(300);
@@ -27,10 +35,23 @@ void menu() {
         var = analogRead(6);
       } else if (params[param] == "S") {
         var = analogRead(6) / 1023.0;
+      } else if (params[param] == "X"){
+        var = map(analogRead(6), 0 , 1023 , 0 , 1);
       } else {
         var = map(analogRead(6), 0 , 1023 , 0 , paramMax);
       }
 
+      if (params[param] == "X"){       
+        LCD.clear();
+        LCD.print("Select side");
+        LCD.setCursor(0,1);
+        if (var == 1){
+          LCD.print("R");
+        } else {
+          LCD.print("L");
+        }
+        
+      } else {
       LCD.clear();
       LCD.print(params[param]);
       LCD.print(var);
@@ -45,16 +66,17 @@ void menu() {
         LCD.print(vars[param]);
       }
     }
+    }
 
     // Exit the menu and save parameters
     if (stopbutton()) {
       while (stopbutton()) {
       }
       setKP((int) vars[0]);
-       setKI((int) vars[1]);
-       setKD((int) vars[2]);
+      setKI((int) vars[1]);
+      setKD((int) vars[2]);
       setControlGain((int) vars[3]);
-setSpeedScale(vars[5]);
+      setSpeedScale(vars[5]);
       irThresh = (int) vars[4];
       // setIRThresh();
       LCD.clear();
@@ -74,51 +96,66 @@ setSpeedScale(vars[5]);
 
 
 
-void setServoPos(int pos){
-  
-  if (pos > 179 || pos < 0){
+void setServoPos(int pos) {
+
+  if (pos > 179 || pos < 0) {
     LCD.clear();
     LCD.println("Invalid servo");
     LCD.print(pos);
     delay(300);
     return;
-  } 
+  }
 
-RCServo0.write(pos);
+  RCServo0.write(pos);
   return;
 }
 
 void printParams(String names[] , double vals[]) {
-// Print all parameters to screen
-//!!! change these to get functions.
+  // Print all parameters to screen
+  //!!! change these to get functions.
+  //P
   LCD.clear();
   LCD.print(names[0]);
-  LCD.print((int)vals[0]);
-  LCD.print(" ");
-  
-  LCD.print(names[1]);
-  LCD.print((int)vals[1]);
-  LCD.print(" ");
-  
-  LCD.print(names[2]);
-  LCD.print((int)vals[2]);
+  LCD.print(getKP());
   LCD.print(" ");
 
+  // I
+  LCD.print(names[1]);
+  LCD.print(getKI());
+  LCD.print(" ");
+
+  // D
+  LCD.print(names[2]);
+  LCD.print(getKD());
+  LCD.print(" ");
+
+  // controlGain
   LCD.setCursor(0, 1);
   LCD.print(names[3]);
-  LCD.print((int)vals[3]);
+  LCD.print(getControlGain());
   LCD.print(" ");
-  
+
+  // irThresh
   LCD.print(names[4]);
-  LCD.print((int)vals[4]);
+  LCD.print(getIRThresh());
   LCD.print(" ");
-  
+
+  // speedScale
   LCD.print(names[5]);
-  LCD.print(vals[5]);
+  LCD.print(getSpeedScale());
   LCD.print(" ");
 }
 
-
+void initConsts(int p, int i, int d, int g, int t, double s, int x){
+  double arr[numVars] = {p, i, d, g, t, s, x};
+  setArray(vars, arr, numVars);
+  setKP(p);
+  setKI(i);
+  setKD(d);
+  setControlGain(g);
+  setSpeedScale(s);
+  setIRThresh(t);
+}
 
 
 

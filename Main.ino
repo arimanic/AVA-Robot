@@ -1,6 +1,11 @@
 //Menu controlled variables
-String params[] = {"P", "I", "D", "G", "T", "S"};
-double vars[] = {0, 0, 0, 0, 0, 0};
+/* 
+ *  P I D control scaling constants for PID control. G is total gain constant for control
+ *  T is the infrared sensor Threshold. S is the scaling constant for drive speed
+ *  X is used to select a competition surface (L or R)
+ */
+String params[] = {"P", "I", "D", "G", "T", "S", "X"};
+double vars[numVars] = {0};
 //irThresh
 
 
@@ -14,9 +19,8 @@ double vars[] = {0, 0, 0, 0, 0, 0};
 void setup()
 {
 #include <phys253setup.txt>
+initConsts(12,0,3,10,1100,0.95,1);
 
-setIRThresh(1200);
-setSpeedScale(1.00);
 
   LCD.clear();
   Serial.begin(9600) ;
@@ -27,7 +31,7 @@ setSpeedScale(1.00);
   attachISR(INT1, ISR1);
   attachISR(INT2, ISR2);
   attachISR(INT3, ISR3);
-  attachTimerInterrupt(1, timer1ISR);
+  //attachTimerInterrupt(1, timer1ISR);
 
   alrdyStop = false;
 
@@ -77,11 +81,10 @@ void phase1() {
 
 LCD.clear();
   while (1) {    
-    setMotors(255,255,0);
     if (sonarInterrupt) {
       if (offEdgeTurn == "L") {
         setMotors(0 , 255 , 0); // hard left turn
-      } else  {
+      } else {
         setMotors(255 , 0 , 0); // hard right turn
       }
     } else if (gateStop() && !alrdyStop) {
