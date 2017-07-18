@@ -54,7 +54,7 @@ void menu() {
        setKI((int) vars[1]);
        setKD((int) vars[2]);
       setControlGain((int) vars[3]);
-      speedScale =  vars[5];
+setSpeedScale(vars[5]);
       irThresh = (int) vars[4];
       // setIRThresh();
       LCD.clear();
@@ -71,11 +71,7 @@ void menu() {
   }
 }
 
-void setMotors(int L, int R, int ctrl) {
-  // Calculates and sets motor speed and control
-  motor.speed(RmotorPin, (R + ctrl)*speedScale);
-  motor.speed(LmotorPin, (L - ctrl)*speedScale);
-}
+
 
 
 void setServoPos(int pos){
@@ -94,6 +90,7 @@ RCServo0.write(pos);
 
 void printParams(String names[] , double vals[]) {
 // Print all parameters to screen
+//!!! change these to get functions.
   LCD.clear();
   LCD.print(names[0]);
   LCD.print((int)vals[0]);

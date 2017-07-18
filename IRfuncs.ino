@@ -11,7 +11,7 @@ void setIRThresh(int thresh){
 bool gateStop() {
     getIRs();
     for (int i = 0; i < numIR; i++) {
-      if (IRs[i] > irThresh) {
+      if (IRs[i] >= irThresh) {
         return true;
       }
     }

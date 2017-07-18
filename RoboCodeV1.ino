@@ -1,11 +1,13 @@
-#include <phys253.h>
-#include <LiquidCrystal.h>
-#include <math.h>
-#include <string.h>
 #include <arrayHelpers.h>
 #include <globConsts.h>
 #include <Interrupts.h>
+#include <motor.h>
+#include <phys253.h>
+#include <phys253pins.h>
 #include <PID.h>
+#include <ServoTINAH.h>
+
+
 
 // Variables for internal interrupts and logic checks. 
 // All of these should be set during setup or phase transitions
@@ -17,8 +19,9 @@ bool alrdyStop;
 int timeElapsed;
 
 // Sonar interrupt variables
-bool sonarInterrupt;
+bool sonarInterrupt = true;
 String offEdgeTurn;
+
 
 // Wheel interrupt variables
 int wheelRotations;
@@ -30,12 +33,12 @@ void timer1ISR() {
   timeElapsed++;
 }
 
-void ISR1() { //!!! make this work for Lsonar
-  sonarInterrupt = !sonarInterrupt;
-  offEdgeTurn = "R";
+void ISR1() { 
+ sonarInterrupt = !sonarInterrupt;
+ offEdgeTurn = "R";
 }
 
-void ISR2() { //!!! make this work for Rsonar
+void ISR2() { 
   sonarInterrupt = !sonarInterrupt;
   offEdgeTurn = "L";
 }
