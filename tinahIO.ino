@@ -91,23 +91,6 @@ void menu() {
   }
 }
 
-
-
-
-void setServoPos(int pos) {
-
-  if (pos > 179 || pos < 0) {
-    LCD.clear();
-    LCD.println("Invalid servo");
-    LCD.print(pos);
-    delay(300);
-    return;
-  }
-
-  RCServo0.write(pos);
-  return;
-}
-
 void printParams(String names[] , double vals[]) {
   // Print all parameters to screen
   //!!! change these to get functions.

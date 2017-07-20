@@ -19,7 +19,7 @@ double vars[numVars] = {0};
 void setup()
 {
 #include <phys253setup.txt>
-initConsts(12,0,3,5,1100,0.95,1);
+initConsts(12,0,3,2,1100,0.95,1);
 
 
   LCD.clear();
@@ -31,8 +31,8 @@ initConsts(12,0,3,5,1100,0.95,1);
   attachISR(INT1, ISR1);
   attachISR(INT2, ISR2);
   attachISR(INT3, ISR3);
-  attachTimer0Interrupt(1, timer0ISR);
-  //attachTimerInterrupt(1, timer3ISR);
+  attachTimer0Interrupt(timer0ISR);
+ 
   alrdyStop = false;
 
   wheelRotations = 0;
@@ -71,7 +71,7 @@ void phase1() {
  */
   
   // Phase 1 setup
-   timeElapsedA = 0;
+
   timeElapsed = 0;
   alrdyStop = false;
 
@@ -81,18 +81,6 @@ void phase1() {
 
 LCD.clear();
   while (1) {    
-//    int x = analogRead(6);
-//    motor.speed(0,x);
-//       motor.speed(1,x);
-//          motor.speed(2,x);
-//             motor.speed(3,x);
-//             
-//    LCD.clear();
-//    LCD.print(timeElapsed);
-//    LCD.print(" ");
-//    LCD.print(timeElapsedA);
-//    LCD.print(" ");
-//    LCD.print(x);
 //    if (sonarInterrupt) {
 //      if (offEdgeTurn == "L") {
 //        setMotors(0 , 255 , 0); // hard left turn
@@ -108,10 +96,20 @@ LCD.clear();
 //      setMotors(0, 0, 0);
 //      phase2();
 //    } else {
-//      PID4follow();
-//    }
+      int con = PID4follow();
+      LCD.clear();
+      LCD.print(getQRD(3));
+       LCD.print(getQRD(2));
+        LCD.print(getQRD(1));
+         LCD.print(getQRD(0));
+         setMotors(255,255,con);
 
-PID4follow();
+         if (atCross()) {
+     setMotors(0, 0, 0);
+    phase2();
+    }
+ //   }
+
 
     if (stopbutton()) {
       while (stopbutton()) {
@@ -122,7 +120,16 @@ PID4follow();
 }
 
 void phase2(){
-  
+  while(1){
+  int con = PID2follow();
+  setMotors(255,255,con);
+  LCD.clear();
+      LCD.print(getQRD(3));
+       LCD.print(getQRD(2));
+        LCD.print(getQRD(1));
+         LCD.print(getQRD(0));
+         LCD.print("Cross");
+}
 }
 
 

@@ -28,17 +28,13 @@ int wheelRotations;
 int printCount;
 
 long overflowCount = 0;
+
 void timer0ISR() {
   overflowCount++;
   if (overflowCount >= 61){
   timeElapsed++;
   overflowCount = 0;
   }
-}
-int timeElapsedA = 0;
-void timer3ISR() {
-  timeElapsedA++;
-  
 }
 
 void ISR1() { 
@@ -60,30 +56,6 @@ void ISR3() { //!!! make this work for wheel measurement
 
 
 
-namespace {
-  void(*timer)();
-}
-ISR(TIMER0_COMP_vect) {
-  (*timer)();
-}
 
-/* Configures Timer1 to call an interrupt routine with the desired frequency  */
-/* The interrupt routine that is called is ISR(TIMER1_COMPA_vect)             */
-/* Valid interrupt frequencies: 1Hz to 65535 Hz                               */
-/* If the frequency is impossible to achieve, no interrupt will be configured */
-/* Timer 1 affects Motor 1 */
-void attachTimer0Interrupt(unsigned int interruptFrequencyHz, void(*f)()){
-int overflowsNeeded = 100;
 
-      cli();
-      TCCR0 = 0;                         /* Clear current comparison value */
-      TCNT0 = 0;                         /* Clear current timer value      */
-      TCCR0 = (1 << CS00);              /* Set timer comparison mode      */
-      TCCR0 |= (1 << CS01);
-      TCCR0 |= (1 << CS02);
-      TIMSK |= (1 << OCIE0);            /* Set timer interrupt enable     */
-      timer = f;
-      sei();
-      return;
 
-}
