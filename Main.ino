@@ -19,7 +19,7 @@ double vars[numVars] = {0};
 void setup()
 {
 #include <phys253setup.txt>
-initConsts(12,0,3,10,1100,0.95,1);
+initConsts(12,0,3,5,1100,0.95,1);
 
 
   LCD.clear();
@@ -31,8 +31,8 @@ initConsts(12,0,3,10,1100,0.95,1);
   attachISR(INT1, ISR1);
   attachISR(INT2, ISR2);
   attachISR(INT3, ISR3);
-  //attachTimerInterrupt(1, timer1ISR);
-
+  attachTimer0Interrupt(1, timer0ISR);
+  //attachTimerInterrupt(1, timer3ISR);
   alrdyStop = false;
 
   wheelRotations = 0;
@@ -51,7 +51,7 @@ void loop() { // final version. working as intended do not modify
 
   // This section is concerned with printing variables to the screen
   printCount++;
-  if (printCount > 40) {
+  if (printCount > 400) {
     printParams(params , vars);
     printCount = 0;
   }
@@ -71,7 +71,7 @@ void phase1() {
  */
   
   // Phase 1 setup
-  
+   timeElapsedA = 0;
   timeElapsed = 0;
   alrdyStop = false;
 
@@ -81,23 +81,37 @@ void phase1() {
 
 LCD.clear();
   while (1) {    
-    if (sonarInterrupt) {
-      if (offEdgeTurn == "L") {
-        setMotors(0 , 255 , 0); // hard left turn
-      } else {
-        setMotors(255 , 0 , 0); // hard right turn
-      }
-    } else if (gateStop() && !alrdyStop) {
-      while(gateStop()){
-      setMotors(0, 0, 0);
-      }
-      alrdyStop = true;
-    } else if (atCross()) {
-      setMotors(0, 0, 0);
-      phase2();
-    } else {
-      PID4follow();
-    }
+//    int x = analogRead(6);
+//    motor.speed(0,x);
+//       motor.speed(1,x);
+//          motor.speed(2,x);
+//             motor.speed(3,x);
+//             
+//    LCD.clear();
+//    LCD.print(timeElapsed);
+//    LCD.print(" ");
+//    LCD.print(timeElapsedA);
+//    LCD.print(" ");
+//    LCD.print(x);
+//    if (sonarInterrupt) {
+//      if (offEdgeTurn == "L") {
+//        setMotors(0 , 255 , 0); // hard left turn
+//      } else {
+//        setMotors(255 , 0 , 0); // hard right turn
+//      }
+//    } else if (gateStop() && !alrdyStop) {
+//      while(gateStop()){
+//      setMotors(0, 0, 0);
+//      }
+//      alrdyStop = true;
+//    } else if (atCross()) {
+//      setMotors(0, 0, 0);
+//      phase2();
+//    } else {
+//      PID4follow();
+//    }
+
+PID4follow();
 
     if (stopbutton()) {
       while (stopbutton()) {

@@ -13,13 +13,11 @@ void menu() {
   vars[5] = getSpeedScale();
 
   LCD.clear();
-  LCD.print("Menu");
-  delay(300);
 
   while (1) {
 
     printMenu++;
-    if (printMenu > 40) {
+    if (printMenu > 400) {
       printMenu = 0;
 
       param = map(analogRead(7), 0, 1000, 0, numVars - 1);
