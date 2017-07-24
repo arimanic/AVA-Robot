@@ -1,9 +1,9 @@
 //Menu controlled variables
-/* 
- *  P I D control scaling constants for PID control. G is total gain constant for control
- *  T is the infrared sensor Threshold. S is the scaling constant for drive speed
- *  X is used to select a competition surface (L or R)
- */
+/*
+    P I D control scaling constants for PID control. G is total gain constant for control
+    T is the infrared sensor Threshold. S is the scaling constant for drive speed
+    X is used to select a competition surface (L or R)
+*/
 String params[] = {"P", "I", "D", "G", "T", "S", "X"};
 double vars[numVars] = {0};
 //irThresh
@@ -19,12 +19,13 @@ double vars[numVars] = {0};
 void setup()
 {
 #include <phys253setup.txt>
-initConsts(12,0,3,2,1100,0.95,1);
-
-
+  Serial.begin(9600);
   LCD.clear();
-  Serial.begin(9600) ;
+  
+  initConsts(11, 0, 8, 2, 1100, 0.45, 1);
 
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
   enableExternalInterrupt(INT1, FALLING);
   enableExternalInterrupt(INT2, FALLING);
   enableExternalInterrupt(INT3, FALLING);
@@ -32,12 +33,13 @@ initConsts(12,0,3,2,1100,0.95,1);
   attachISR(INT2, ISR2);
   attachISR(INT3, ISR3);
   attachTimer0Interrupt(timer0ISR);
- 
+
   alrdyStop = false;
 
-  wheelRotations = 0;
+  wheelTicks = 0;
 
   printCount = 0;
+  moveBaseServo(90);
 }
 
 void loop() { // final version. working as intended do not modify
@@ -65,11 +67,11 @@ void loop() { // final version. working as intended do not modify
 }
 
 void phase1() {
-/* Phase 1 moves the robot from the start point to the ring junction. 
- *  It stops the robot at the 10 kHz gate, but only once. 
- *  Edge sensors are used through external interrupts to prevent 
- */
-  
+  /* Phase 1 moves the robot from the start point to the ring junction.
+      It stops the robot at the 10 kHz gate, but only once.
+      Edge sensors are used through external interrupts to prevent
+  */
+
   // Phase 1 setup
 
   timeElapsed = 0;
@@ -79,36 +81,49 @@ void phase1() {
   //moveLowerArm(drivePos);
   // end of setup
 
-LCD.clear();
-  while (1) {    
-//    if (sonarInterrupt) {
-//      if (offEdgeTurn == "L") {
-//        setMotors(0 , 255 , 0); // hard left turn
-//      } else {
-//        setMotors(255 , 0 , 0); // hard right turn
-//      }
-//    } else if (gateStop() && !alrdyStop) {
-//      while(gateStop()){
-//      setMotors(0, 0, 0);
-//      }
-//      alrdyStop = true;
-//    } else if (atCross()) {
-//      setMotors(0, 0, 0);
-//      phase2();
-//    } else {
-      int con = PID4follow();
-      LCD.clear();
-      LCD.print(getQRD(3));
-       LCD.print(getQRD(2));
-        LCD.print(getQRD(1));
-         LCD.print(getQRD(0));
-         setMotors(255,255,con);
+  LCD.clear();
+  while (1) {
+       /* if (sonarInterrupt) {
+          if (offEdgeTurn == "L") {
+            setMotors(0 , 255 , 0); // hard left turn
+          } else {
+            setMotors(255 , 0 , 0); // hard right turn
+          }
+        } else if (gateStop() && !alrdyStop) {
+          while(gateStop()){
+          setMotors(0, 0, 0);
+          }
+          alrdyStop = true;
+        } else if (atCross()) {
+          setMotors(0, 0, 0);
+          phase2();
+        } else { */
 
-         if (atCross()) {
-     setMotors(0, 0, 0);
-    phase2();
-    }
- //   }
+   
+   PID4follow();
+      
+   printCount++;
+   if (printCount > 400) {
+    printCount = 0;
+    /*LCD.print(getQRD(3));
+    LCD.print(getQRD(2));
+    LCD.print(getQRD(1));
+    LCD.print(getQRD(0));
+    LCD.print(" ");
+    LCD.print(getP4());
+    LCD.print(" ");
+    LCD.print(getD());
+
+    LCD.setCursor(0,1);
+    LCD.print(getDist(wheelTicks));
+    LCD.print(" ");
+    LCD.print(getP4()+getD());*/
+   }
+//    if (atCross()) {
+//      setMotors(0, 0, 0);
+//          phase2();
+//    }
+//   }
 
 
     if (stopbutton()) {
@@ -119,17 +134,29 @@ LCD.clear();
   }
 }
 
-void phase2(){
-  while(1){
-  int con = PID2follow();
-  setMotors(255,255,con);
-  LCD.clear();
-      LCD.print(getQRD(3));
-       LCD.print(getQRD(2));
-        LCD.print(getQRD(1));
-         LCD.print(getQRD(0));
-         LCD.print("Cross");
-}
+void phase2() {
+  while (1) {
+    //PID2follow();
+
+    LCD.clear();
+//    LCD.print(getQRD(3));
+//    LCD.print(getQRD(2));
+//    LCD.print(getQRD(1));
+//    LCD.print(getQRD(0));
+    LCD.print("Cross");
+
+    if (stopbutton()) {
+      while (stopbutton()) {
+      }
+      menu();
+    }
+
+    if (startbutton()) {
+      while (startbutton()) {
+      }
+      phase1();
+    }
+  }
 }
 
 

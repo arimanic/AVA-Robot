@@ -81,7 +81,7 @@ void moveBaseServo(int val){
   if (val > 179){
     val = 179;
   } else if (val < 0){
-    val = 0;
+    val = 0;                                                                                                          
   }
 
 RCServo0.write(val);

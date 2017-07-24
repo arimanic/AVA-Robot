@@ -34,9 +34,9 @@ void menu() {
       } else if (params[param] == "S") {
         var = analogRead(6) / 1023.0;
       } else if (params[param] == "X"){
-        var = map(analogRead(6), 0 , 1023 , 0 , 1);
+        var = doubleMap(analogRead(6), 0 , 1023 , 0 , 1);
       } else {
-        var = map(analogRead(6), 0 , 1023 , 0 , paramMax);
+        var = doubleMap(analogRead(6), 0 , 1023 , 0 , paramMax);
       }
 
       if (params[param] == "X"){       
@@ -53,13 +53,16 @@ void menu() {
       LCD.clear();
       LCD.print(params[param]);
       LCD.print(var);
-      LCD.setCursor(0, 1);
       if (params[param] == "T") {
-        LCD.print("Rs");
+        LCD.print(" Rs");
         LCD.print(digitalRead(QRD1pin));
         LCD.print(" Ls");
         LCD.print(digitalRead(QRD2pin));
+        LCD.setCursor(0, 1);
+        LCD.print(" Last = ");
+        LCD.print(getIRThresh());
       } else {
+        LCD.setCursor(0, 1);
         LCD.print(" Last = ");
         LCD.print(vars[param]);
       }
@@ -70,10 +73,10 @@ void menu() {
     if (stopbutton()) {
       while (stopbutton()) {
       }
-      setKP((int) vars[0]);
-      setKI((int) vars[1]);
-      setKD((int) vars[2]);
-      setControlGain((int) vars[3]);
+      setKP( vars[0]);
+      setKI( vars[1]);
+      setKD( vars[2]);
+      setControlGain( vars[3]);
       setSpeedScale(vars[5]);
       irThresh = (int) vars[4];
       // setIRThresh();
@@ -106,17 +109,17 @@ void printParams(String names[] , double vals[]) {
   LCD.print(" ");
 
   // D
+  LCD.setCursor(0, 1);
   LCD.print(names[2]);
   LCD.print(getKD());
   LCD.print(" ");
 
   // controlGain
-  LCD.setCursor(0, 1);
   LCD.print(names[3]);
   LCD.print(getControlGain());
   LCD.print(" ");
 
-  // irThresh
+/*  // irThresh
   LCD.print(names[4]);
   LCD.print(getIRThresh());
   LCD.print(" ");
@@ -124,10 +127,10 @@ void printParams(String names[] , double vals[]) {
   // speedScale
   LCD.print(names[5]);
   LCD.print(getSpeedScale());
-  LCD.print(" ");
+  LCD.print(" "); */
 }
 
-void initConsts(int p, int i, int d, int g, int t, double s, int x){
+void initConsts(double p, double i, double d, double g, double t, double s, int x){
   double arr[numVars] = {p, i, d, g, t, s, x};
   setArray(vars, arr, numVars);
   setKP(p);
@@ -139,4 +142,6 @@ void initConsts(int p, int i, int d, int g, int t, double s, int x){
 }
 
 
-
+double doubleMap(double x, double in_min, double in_max, double out_min, double out_max){
+ return (double)(x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
