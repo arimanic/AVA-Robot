@@ -7,6 +7,7 @@
 #include <PID.h>
 #include <ServoTINAH.h>
 #include <sonar.h>
+#include <TinahIO.h>
 
 // Variables for internal interrupts and logic checks.
 // All of these should be set during setup or phase transitions
