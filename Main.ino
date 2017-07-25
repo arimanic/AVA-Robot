@@ -4,8 +4,7 @@
     T is the infrared sensor Threshold. S is the scaling constant for drive speed
     X is used to select a competition surface (L or R)
 */
-String params[] = {"P", "I", "D", "G", "T", "S", "X"};
-double vars[numVars] = {0};
+
 //irThresh
 
 
@@ -21,8 +20,6 @@ void setup()
 #include <phys253setup.txt>
   Serial.begin(9600);
   LCD.clear();
-  
-  initConsts(11, 0, 8, 2, 1100, 0.45, 1);
 
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
@@ -34,12 +31,12 @@ void setup()
   attachISR(INT3, ISR3);
   attachTimer0Interrupt(timer0ISR);
 
-  alrdyStop = false;
-
+// set all variables and constants
+initConsts(11, 0, 8, 2, 1100, 0.00, 1, 0);
+alrdyStop = false;
   wheelTicks = 0;
-
   printCount = 0;
-  moveBaseServo(90);
+  moveBaseServo(76);
 }
 
 void loop() { // final version. working as intended do not modify
@@ -54,7 +51,7 @@ void loop() { // final version. working as intended do not modify
   // This section is concerned with printing variables to the screen
   printCount++;
   if (printCount > 400) {
-    printParams(params , vars);
+    printParams();
     printCount = 0;
   }
 
@@ -62,8 +59,9 @@ void loop() { // final version. working as intended do not modify
   ///// Robot AI //////////////
   /////////////////////////////
   if (startbutton()) {
-    phase1();
+     phase1();
   }
+
 }
 
 void phase1() {
@@ -101,11 +99,12 @@ void phase1() {
 
    
    PID4follow();
-      
+
    printCount++;
    if (printCount > 400) {
     printCount = 0;
-    /*LCD.print(getQRD(3));
+    LCD.clear();
+    LCD.print(getQRD(3));
     LCD.print(getQRD(2));
     LCD.print(getQRD(1));
     LCD.print(getQRD(0));
@@ -117,7 +116,7 @@ void phase1() {
     LCD.setCursor(0,1);
     LCD.print(getDist(wheelTicks));
     LCD.print(" ");
-    LCD.print(getP4()+getD());*/
+    LCD.print(getP4()+getD());
    }
 //    if (atCross()) {
 //      setMotors(0, 0, 0);
@@ -139,10 +138,10 @@ void phase2() {
     //PID2follow();
 
     LCD.clear();
-//    LCD.print(getQRD(3));
-//    LCD.print(getQRD(2));
-//    LCD.print(getQRD(1));
-//    LCD.print(getQRD(0));
+    LCD.print(getQRD(3));
+    LCD.print(getQRD(2));
+    LCD.print(getQRD(1));
+    LCD.print(getQRD(0));
     LCD.print("Cross");
 
     if (stopbutton()) {
@@ -159,4 +158,27 @@ void phase2() {
   }
 }
 
+void sonarTest(){
+  while(1){
+    outPulse();
+    LCD.clear();
+    LCD.print(duration);
+    LCD.print(" ");
+    LCD.print(getOffTime());
+    LCD.setCursor(0,1);
+    LCD.print(overflowCount);
+  }
+}
+
+void armDebug(){
+  int pos;
+  int servo;
+  while(1){
+    pos = map(analogRead(6),0,1023,0,4);
+    servo = map(analogRead(7),0,1023,-2,182);
+
+    moveLowerArm(pos);
+    moveUpperArm(pos);
+  }
+}
 

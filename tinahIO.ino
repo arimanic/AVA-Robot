@@ -1,3 +1,5 @@
+String params[] = {"P", "I", "D", "G", "T", "Speed ", "X", "S Thresh"};
+double vars[numVars] = {0};
 
 void menu() {
   int param, printMenu;
@@ -31,7 +33,7 @@ void menu() {
 
       if (params[param] == "T") {
         var = analogRead(6);
-      } else if (params[param] == "S") {
+      } else if (params[param] == "Speed ") {
         var = analogRead(6) / 1023.0;
       } else if (params[param] == "X"){
         var = doubleMap(analogRead(6), 0 , 1023 , 0 , 1);
@@ -94,44 +96,44 @@ void menu() {
   }
 }
 
-void printParams(String names[] , double vals[]) {
+void printParams() {
   // Print all parameters to screen
   //!!! change these to get functions.
   //P
   LCD.clear();
-  LCD.print(names[0]);
+  LCD.print(params[0]);
   LCD.print(getKP());
   LCD.print(" ");
 
   // I
-  LCD.print(names[1]);
+  LCD.print(params[1]);
   LCD.print(getKI());
   LCD.print(" ");
 
   // D
   LCD.setCursor(0, 1);
-  LCD.print(names[2]);
+  LCD.print(params[2]);
   LCD.print(getKD());
   LCD.print(" ");
 
   // controlGain
-  LCD.print(names[3]);
+  LCD.print(params[3]);
   LCD.print(getControlGain());
   LCD.print(" ");
 
 /*  // irThresh
-  LCD.print(names[4]);
+  LCD.print(params[4]);
   LCD.print(getIRThresh());
   LCD.print(" ");
 
   // speedScale
-  LCD.print(names[5]);
+  LCD.print(params[5]);
   LCD.print(getSpeedScale());
   LCD.print(" "); */
 }
 
-void initConsts(double p, double i, double d, double g, double t, double s, int x){
-  double arr[numVars] = {p, i, d, g, t, s, x};
+void initConsts(double p, double i, double d, double g, double t, double s, int x, double son){
+  double arr[numVars] = {p, i, d, g, t, s, x, son};
   setArray(vars, arr, numVars);
   setKP(p);
   setKI(i);
@@ -139,6 +141,7 @@ void initConsts(double p, double i, double d, double g, double t, double s, int 
   setControlGain(g);
   setSpeedScale(s);
   setIRThresh(t);
+  setSonarThresh(son);
 }
 
 

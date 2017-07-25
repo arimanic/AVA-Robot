@@ -17,14 +17,16 @@ double getRelLowerPos(int pos) {
   // Determines if the lower portion of the arm is at the position passed as pos
   // returns a negative number if the position is low. Positive number if high. 0 if at the right spot
   double voltRead = getBaseMotorPot();
-  if (pos == drivePos) {
-    return voltRead - baseD;
-  } else if (pos == collectPos) {
-    return voltRead - baseC;
-  } else if (pos == fishPos) {
-    return voltRead - baseF;
-  } else if (pos == zipPos) {
-    return voltRead - baseZ;
+
+  switch (pos) {
+    case drivePos:
+      return voltRead - baseD;
+    case collectPos:
+      return voltRead - baseC;
+    case fishPos:
+      return voltRead - baseF;
+    case zipPos:
+      return voltRead - baseZ;
   }
 }
 
@@ -32,14 +34,15 @@ double getRelUpperPos(int pos) {
   // Determines if the upper portion of the arm is at the position passed as pos
   // returns a negative number if the position is low. Positive number if high. 0 if at the right spot
   double voltRead = getHingeMotorPot();
-  if (pos == drivePos) {
-    return voltRead - hingeD;
-  } else if (pos == collectPos) {
-    return voltRead - hingeC;
-  } else if (pos == fishPos) {
-    return voltRead - hingeF;
-  } else if (pos == zipPos) {
-    return voltRead - hingeZ;
+  switch (pos) {
+    case drivePos:
+      return voltRead - hingeD;
+    case collectPos:
+      return voltRead - hingeC;
+    case fishPos:
+      return voltRead - hingeF;
+    case zipPos:
+      return voltRead - hingeZ;
   }
 }
 
