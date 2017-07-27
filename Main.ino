@@ -5,6 +5,9 @@
     X is used to select a competition surface (L or R)
 */
 int printCount;
+int stage;
+
+int debug = 1; // 0 for no debug, 1 for arm, 2 for ir, 3 for cross
 
 void setup()
 {
@@ -17,12 +20,9 @@ void setup()
   attachISR(INT3, ISR3);
   enableExternalInterrupt(INT1, FALLING);
   enableExternalInterrupt(INT2, FALLING);
-  enableExternalInterrupt(INT3, RISING);
-
+  enableExternalInterrupt(INT3, FALLING);
   // set all variables and constants
-  initConsts(12.5, 0, -4, 2, 1100, 0.30, 0.30, 1, 0);
-  alrdyStop = false;
-  wheelTicks = 0;
+  initConsts(12.5, 0, 4, 2, 1100, 0.40, 0.60, 0.20, 1, 0);
   printCount = 0;
   moveBaseServo(76);
 }
@@ -47,10 +47,18 @@ void loop() { // final version. working as intended do not modify
   ///// Robot AI //////////////
   /////////////////////////////
   if (startbutton()) {
-    //armDebug();
-    phase1();
+    switch (debug) {
+      case 2:
+        irDebug();
+        break;
+      case 1:
+        armDebug();
+        break;
+      case 0:
+        phase1();
+        break;
+    }
   }
-
 }
 
 void phase1() {
@@ -64,6 +72,7 @@ void phase1() {
   setStartTime(millis());
   alrdyStop = false;
   wheelTicks = 0;
+  stage = 0;
   //moveUpperArm(drivePos);
   //moveLowerArm(drivePos);
   // end of setup
@@ -76,62 +85,86 @@ void phase1() {
        } else {
          setMotors(255 , 0 , 0); // hard right turn*/
 
-    double distance = getDist(wheelTicks);
-    if (distance < gateDist) {
-      setSpeedScale(getFlatSpeed());
-      if (gateStop()) {
-        while (gateStop()) {
-          setMotors(0, 0, 0);
+    switch (stage) {
+      case beforeGateStage:
+        /* go fast until you get close to the gate. Slow down when close.
+          Stop while IR is on and then move to next stage when it turns off */
+
+        if (wheelTicks < beforeGateTicks) {
+          stageSpeed(stage);
+          PID4follow();
+        } else if (digitalRead(1)) { //gateStop()
+          while (digitalRead(1)) {  // gateStop()
+            revStop();
+          }
+          wheelTicks = 0;
+          stage++;
+        } else {
+          stageSpeed(slowStage);
+          PID4follow();
         }
-      }
-      else {
-        PID4follow();
-      }
+        break;
 
+      case afterGateStage:
+        if (wheelTicks < afterGateTicks) {
+          stageSpeed(stage);
+          PID4follow();
+        } else {
+          wheelTicks = 0;
+          stage++;
+        }
 
-    } else if  (distance > startRampDist && distance < endRampDist) {
-      setSpeedScale(getRampSpeed());
-      PID4follow();
-     
-    } else if (distance > endRampDist) {
-      setSpeedScale(getFlatSpeed());
-      if (atCross()) {
-        setMotors(0, 0, 0);
-      } else {
-        PID4follow();
-      }
+        break;
+
+      case onRampStage:
+        if (wheelTicks < onRampTicks) {
+          stageSpeed(stage);
+          PID4follow();
+        } else {
+          wheelTicks = 0;
+          stage++;
+        }
+        break;
+
+      case afterRampStage:
+        if (wheelTicks < afterRampTicks) {
+          stageSpeed(stage);
+          PID4follow();
+        } else if (atCross()) {
+          wheelTicks = 0;
+          stage++;
+        } else {
+          stageSpeed(slowStage);
+          PID4follow();
+        }
+        break;
+
+      case ringStage:
+        phase2();
+        break;
+
     }
 
     printCount++;
     if (printCount > 400) {
       printCount = 0;
       LCD.clear();
-      LCD.print(getQRD(0));
-      LCD.print(getQRD(1));
-      LCD.print(getQRD(2));
-      LCD.print(getQRD(3));
-      LCD.print(" ");
+      printQRDs();
       LCD.print(getSpeedScale());
       LCD.print(" ");
-      LCD.print(getD());
+      LCD.print(stage);
 
       LCD.setCursor(0, 1);
-      LCD.print(distance);
+
       LCD.print(" ");
       LCD.print(wheelTicks);
       LCD.print(" ");
-      if (getLastTurn()){
+      if (getLastTurn()) {
         LCD.print("L");
-      }else {
+      } else {
         LCD.print("R");
       }
     }
-    //    if (atCross()) {
-    //      setMotors(0, 0, 0);
-    //          phase2();
-    //    }
-    //   }
-
 
     if (stopbutton()) {
       while (stopbutton()) {
@@ -144,14 +177,13 @@ void phase1() {
 }
 
 void phase2() {
+  stageSpeed(stage);
+  crossTurn();
   while (1) {
-    //PID2follow();
+    PID2follow();
 
     LCD.clear();
-    LCD.print(getQRD(3));
-    LCD.print(getQRD(2));
-    LCD.print(getQRD(1));
-    LCD.print(getQRD(0));
+    printQRDs();
     LCD.print("Cross");
 
     if (stopbutton()) {
@@ -172,7 +204,6 @@ void sonarTest() {
   while (1) {
     outPulse();
     LCD.clear();
-    LCD.print(duration);
     LCD.print(" ");
     LCD.print(getOffTime());
     LCD.setCursor(0, 1);
@@ -183,50 +214,52 @@ void armDebug() {
   int pos;
   int servo;
   while (1) {
-    if (0) {
-      printCount++;
-      pos = map(analogRead(6), 0, 1023, 0, 3);
-      servo = map(analogRead(7), 0, 1023, -2, 182);
-      if (printCount > 400) {
-        printCount = 0;
+    printCount++;
+    pos = map(analogRead(6), 0, 1023, 0, 4);
+    servo = map(analogRead(7), 0, 1023, -2, 182);
+    if (printCount > 400) {
+      printCount = 0;
 
-        LCD.clear();
-        LCD.print(pos);
-        LCD.print(" ");
-        LCD.print(servo);
-        LCD.print(" ");
-        LCD.print(analogRead(armBasePotPin) * 5.0 / 1024);
-        LCD.print(" ");
-        LCD.print(analogRead(armHingePotPin) * 5.0 / 1024);
+      LCD.clear();
+      LCD.print(pos);
+      LCD.print(" ");
+      LCD.print(servo);
+      LCD.print(" ");
+      LCD.print(analogRead(armBasePotPin) * 5.0 / 1024);
+      LCD.print(" ");
+      LCD.print(analogRead(armHingePotPin) * 5.0 / 1024);
 
+    }
+    moveLowerArm(pos);
+    moveUpperArm(pos);
+    moveBaseServo(servo);
+
+  }
+}
+
+void irDebug() {
+  while (1) {
+    printCount++;
+    if (printCount > 4000) {
+      printCount = 0;
+      LCD.clear();
+      LCD.print(analogRead(IR0pin));
+      LCD.print(" ");
+      LCD.print(analogRead(IR1pin));
+      LCD.print(" ");
+      LCD.print(analogRead(IR2pin));
+      LCD.print(" ");
+
+      LCD.setCursor(0, 1);
+      LCD.print(gateStop());
+    }
+
+    if (stopbutton()) {
+      while (stopbutton()) {
       }
-      moveLowerArm(pos);
-      moveUpperArm(pos);
-      moveBaseServo(servo);
-
-    } else {
-      int x = map(analogRead(6), 0, 1023, -1000, 3000);
-      int y = map(analogRead(7), 0, 1023, 0, 3);
-      motor.speed(armBaseMotorPin , getRelLowerPos(y) * -x);
-      //motor.speed(armHingeMotorPin , y);
-      printCount++;
-      if (printCount > 400) {
-        printCount = 0;
-
-        LCD.clear();
-        LCD.print(x);
-        LCD.print(" ");
-        LCD.print(y);
-        LCD.print(" ");
-        LCD.print(analogRead(armBasePotPin) * 5.0 / 1024);
-
-        LCD.setCursor(0, 1);
-        LCD.print(getRelLowerPos(y));
-        LCD.print(" ");
-        LCD.print(atLowerPos(y));
-
-      }
+      menu();
     }
   }
 }
+
 

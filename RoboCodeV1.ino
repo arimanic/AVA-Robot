@@ -24,7 +24,6 @@ bool alrdyStop;
 // Sonar interrupt variables
 bool sonarInterrupt = false;
 String offEdgeTurn;
-double duration; // onTime - offTime
 
 // Wheel interrupt variables
 int wheelTicks;
@@ -37,30 +36,28 @@ int wheelTicks;
 
 void ISR1() {
   offEdgeTurn = "R";
-    duration = seconds() - getOffTime();
-    if (duration >= getSonarThresh()){
-      sonarInterrupt = 1;
-    } else {
-      sonarInterrupt = 0;
-  }
+
+  //  if (duration >= getSonarThresh()) {
+  //    sonarInterrupt = 1;
+  //  } else {
+  //    sonarInterrupt = 0;
+  //  }
 }
 
 void ISR2() {
   offEdgeTurn = "L";
-    duration = seconds() - getOffTime();
-    if (duration >= getSonarThresh()){
-      sonarInterrupt = 1;
-    } else {
-      sonarInterrupt = 0;
-  }
+
+  //  if (duration >= getSonarThresh()) {
+  //    sonarInterrupt = 1;
+  //  } else {
+  //    sonarInterrupt = 0;
+  //  }
 }
+
 
 void ISR3() { //!!! make this work for wheel measurement
   wheelTicks++;
 }
-
-
-
 
 
 
