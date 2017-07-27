@@ -1,5 +1,5 @@
 int crossPos;
-bool onCross;
+bool onCross = false;
 
 bool toyFallen[6] = {0};
 bool toys85[6] = {1, 1, 1, 1, 1, 1};
@@ -24,18 +24,18 @@ void setCrossPos(int newPos) {
   crossPos = newPos;
 }
 
-void moveToPos(int pos) {
-  if (pos > 6) {
+bool moveToPos(int pos) {
+  if (pos > 5) {
     LCD.clear();
     LCD.print("Invalid pos");
-    return;
+    return false;
   }
 
-  while (crossPos != pos) {
+  if (crossPos != pos) {
     if (atCross() && !onCross) {
       onCross = true;
-      if (crossPos >= 6) {
-        crossPos = 1;
+      if (crossPos >= numToys - 1) {
+        crossPos = 0;
       } else {
         crossPos++;
       }
@@ -43,11 +43,15 @@ void moveToPos(int pos) {
       onCross = false;
     }
 
-    PID2follow();
+    PID2follow(); 
+    return false;   
+  } else {
+    revStop();
+    return true;
   }
 }
 
-void toysInWater(int curTime) {
+void toysInWater(double curTime) {
   /*
      Given a time, determine which toys have already fallen off their platforms
   */
@@ -69,21 +73,23 @@ void toysInWater(int curTime) {
 void fullCircleMove() {
   int crossCount = 0;
 
-  if (atCross()) {
-    onCross = true;
-  } else {
-    onCross = false;
-  }
 
-  while (crossCount <= 6) {
+  if (crossCount <= 6) {
     if (atCross() && !onCross) {
+      onCross = true;
       crossCount++;
+      crossPos++;
     } else if (!atCross() && onCross) {
       onCross = false;
     }
 
+// If a transition happens here a cross count will be missed.
     PID2follow();
   }
+}
+
+int getCrossPos() {
+  return crossPos;
 }
 
 //void circleMove() {
@@ -106,4 +112,17 @@ void fullCircleMove() {
 //}
 //}
 
+int findNextToy(int pos , double curTime){
+  if (pos == 5){
+    pos = -1;
+  }
+  
+  for (int i = pos+1; i < numToys; i++){
+    if (!toyFallen[i]){
+      return i;
+    }
+  }
+
+  return -1;
+}
 

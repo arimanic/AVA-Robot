@@ -7,7 +7,8 @@
 int printCount;
 int stage;
 
-int debug = 1; // 0 for no debug, 1 for arm, 2 for ir, 3 for cross
+int mode = 0; // 0 for no debug, 1 for arm, 2 for ir, 3 for cross
+String modes[] = {"Regular" , "Debug arm" , "Debug IR", "Debug ring", "Debug zipline*"};
 
 void setup()
 {
@@ -47,7 +48,23 @@ void loop() { // final version. working as intended do not modify
   ///// Robot AI //////////////
   /////////////////////////////
   if (startbutton()) {
-    switch (debug) {
+    delay(300);
+    while (startbutton()) {
+      mode = gatedKnobMap(6 , 0 , numModes - 1);
+
+      printCount++;
+      if (printCount > 500) {
+        printCount = 0;
+        LCD.clear();
+        LCD.print(modes[mode]);
+      }
+    }
+    switch (mode) {
+      case 4:
+        break;
+      case 3:
+        ringDebug();
+        break;
       case 2:
         irDebug();
         break;
@@ -91,17 +108,24 @@ void phase1() {
           Stop while IR is on and then move to next stage when it turns off */
 
         if (wheelTicks < beforeGateTicks) {
+          // fast on flats leading up to gate
           stageSpeed(stage);
           PID4follow();
         } else if (digitalRead(1)) { //gateStop()
+          // Stop at gate and move to next stage
           while (digitalRead(1)) {  // gateStop()
             revStop();
           }
           wheelTicks = 0;
           stage++;
-        } else {
+        } else if (wheelTicks < beforeGateTicks + 40) {
+          // Slow down if close
           stageSpeed(slowStage);
           PID4follow();
+        } else {
+          // if you get too close stop and wait for the IRs to go 10khz
+          // to ensure that you have a full 5 seconds to get throughs
+          revStop();
         }
         break;
 
@@ -184,8 +208,6 @@ void phase2() {
 
     LCD.clear();
     printQRDs();
-    LCD.print("Cross");
-
     if (stopbutton()) {
       while (stopbutton()) {
       }
@@ -229,6 +251,11 @@ void armDebug() {
       LCD.print(" ");
       LCD.print(analogRead(armHingePotPin) * 5.0 / 1024);
 
+      LCD.setCursor(0,1);
+      LCD.print(atUpperPos(pos));
+      LCD.print(" ");
+      LCD.print(atLowerPos(pos));
+
     }
     moveLowerArm(pos);
     moveUpperArm(pos);
@@ -239,6 +266,14 @@ void armDebug() {
 
 void irDebug() {
   while (1) {
+    if (stopbutton()) {
+      while (stopbutton()) {
+      }
+      menu();
+    }
+
+    moveBaseServo(gatedKnobMap(7, 0, 180));
+
     printCount++;
     if (printCount > 4000) {
       printCount = 0;
@@ -262,4 +297,46 @@ void irDebug() {
   }
 }
 
+void ringDebug() {
+  extern bool toyFallen[];
+  int targetPos;
+  setCrossPos(-1);
+  stageSpeed(ringStage);
+  setStartTime((double)millis() - 55000);
+  while (1) {
+    toysInWater(seconds());
+    if (moveToPos(targetPos)) {
+      // do the arm thing
+      targetPos = findNextToy(getCrossPos(), seconds());
+    }
+    if (atCross()) {
+
+    }
+
+    printCount++;
+    if (printCount > 500) {
+      printCount = 0;
+      LCD.clear();
+      printQRDs();
+      LCD.print(targetPos);
+      LCD.print(" ");
+      LCD.print(getCrossPos());
+      LCD.print(" ");
+      LCD.print(seconds());
+      LCD.print(" ");
+
+      LCD.setCursor(0, 1);
+      for (int i = 0; i < numToys; i++) {
+        LCD.print(toyFallen[i]);
+      }
+    }
+
+    if (startbutton()) {  // push start to reset the timer
+      while (startbutton()) {
+      }
+      setStartTime((double)millis() - 55000);
+      setCrossPos(0);
+    }
+  }
+}
 
