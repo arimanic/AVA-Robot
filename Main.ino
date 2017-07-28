@@ -21,7 +21,7 @@ void setup()
   attachISR(INT3, ISR3);
   enableExternalInterrupt(INT1, FALLING);
   enableExternalInterrupt(INT2, FALLING);
-  enableExternalInterrupt(INT3, FALLING);
+  enableExternalInterrupt(INT3, LOW);
   // set all variables and constants
   initConsts(12.5, 0, 4, 2, 1100, 0.40, 0.60, 0.20, 1, 0);
   printCount = 0;
@@ -203,11 +203,15 @@ void phase1() {
 void phase2() {
   stageSpeed(stage);
   crossTurn();
+  setCrossPos(-1);
+  setTargetPos(0);
+  stageSpeed(ringStage);
+  setStartTime((double)millis() - 55000);
   while (1) {
-    PID2follow();
-
-    LCD.clear();
-    printQRDs();
+    if (moveToPos(getTargetPos()) && getTargetPos() != -1) {
+      delay(500);
+      setTargetPos(findNextToy(getCrossPos(), seconds()));
+    }
     if (stopbutton()) {
       while (stopbutton()) {
       }
@@ -251,7 +255,7 @@ void armDebug() {
       LCD.print(" ");
       LCD.print(analogRead(armHingePotPin) * 5.0 / 1024);
 
-      LCD.setCursor(0,1);
+      LCD.setCursor(0, 1);
       LCD.print(atUpperPos(pos));
       LCD.print(" ");
       LCD.print(atLowerPos(pos));
@@ -299,26 +303,25 @@ void irDebug() {
 
 void ringDebug() {
   extern bool toyFallen[];
-  int targetPos;
   setCrossPos(-1);
+  setTargetPos(0);
   stageSpeed(ringStage);
   setStartTime((double)millis() - 55000);
   while (1) {
-    toysInWater(seconds());
-    if (moveToPos(targetPos)) {
-      // do the arm thing
-      targetPos = findNextToy(getCrossPos(), seconds());
-    }
-    if (atCross()) {
 
+    toysInWater(seconds());
+    if (moveToPos(getTargetPos()) && getTargetPos() != -1) {
+      // do the arm thing and then set the target to the next toy
+      setTargetPos(findNextToy(getCrossPos(), seconds()));
     }
+
 
     printCount++;
     if (printCount > 500) {
       printCount = 0;
       LCD.clear();
       printQRDs();
-      LCD.print(targetPos);
+      LCD.print(getTargetPos());
       LCD.print(" ");
       LCD.print(getCrossPos());
       LCD.print(" ");
@@ -335,7 +338,9 @@ void ringDebug() {
       while (startbutton()) {
       }
       setStartTime((double)millis() - 55000);
-      setCrossPos(0);
+      setCrossPos(-1);
+      setTargetPos(0);
+      toysInWater(seconds());
     }
   }
 }
