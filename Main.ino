@@ -10,8 +10,7 @@ int stage;
 int mode = 0; // 0 for no debug, 1 for arm, 2 for ir, 3 for cross
 String modes[] = {"Regular" , "Debug arm" , "Debug IR", "Debug ring", "Debug PID", "Calib Arm"};
 
-void setup()
-{
+void setup(){
 #include <phys253setup.txt>
   Serial.begin(9600);
   pinMode(trigPin, OUTPUT);
@@ -21,7 +20,7 @@ void setup()
   attachISR(INT3, ISR3);
   enableExternalInterrupt(INT1, FALLING);
   enableExternalInterrupt(INT2, FALLING);
-  enableExternalInterrupt(INT3, RISING);
+  enableExternalInterrupt(INT3, FALLING);
   // set all variables and constants
   // void initConsts( p,  i,  d,  g,  t,  flat,  ramp,  ring,
   //                  smallErr,  medErr,  largeErr,  hugeErr,  armSpeed,  fineArmSpeed,  side);
@@ -92,8 +91,8 @@ void phase1() {
 
   // Phase 1 setup
   setStartTime(millis());
+  setStageTime(millis());
   alrdyStop = false;
-  wheelTicks = 0;
   stage = 0;
   //moveUpperArm(drivePos);
   //moveLowerArm(drivePos);
@@ -120,7 +119,7 @@ void phase1() {
         /* go fast until you get close to the gate. Slow down when close.
           Stop while IR is on and then move to next stage when it turns off */
 
-        if (wheelTicks < beforeGateTicks) {
+        if (stageMilliseconds() < beforeGateMillis) {
           // fast on flats leading up to gate
           stageSpeed(stage);
           PID4follow();
@@ -129,10 +128,10 @@ void phase1() {
           while (gateStop()) {  // gateStop()
             revStop();
           }
-          wheelTicks = 0;
+          setStageTime(millis());
           stage++;
           
-        } else if (wheelTicks < beforeGateTicks + 100) {
+        } else if (stageMilliseconds() < beforeGateMillis + 300) {
           // Slow down if close
           stageSpeed(slowStage);
           PID4follow();
@@ -144,11 +143,11 @@ void phase1() {
         break;
 
       case afterGateStage:        
-        if (wheelTicks < afterGateTicks) {
+        if (stageMilliseconds() < afterGateMillis) {
           stageSpeed(stage);
           PID4follow();
         } else {
-          wheelTicks = 0;
+          setStageTime(millis());
           revStop();
           stage++;
         }
@@ -156,21 +155,21 @@ void phase1() {
         break;
 
       case onRampStage:        
-        if (wheelTicks < onRampTicks) {
+        if (stageMilliseconds() < onRampMillis) {
           stageSpeed(stage);
           PID4follow();
         } else {
-          wheelTicks = 0;
+          setStageTime(millis());
           stage++;
         }
         break;
 
       case afterRampStage:
-        if (wheelTicks < afterRampTicks) {
+        if (stageMilliseconds() < afterRampMillis) {
           stageSpeed(stage);
           PID4follow();
         } else if (atCross()) {
-          wheelTicks = 0;
+          setStageTime(millis());
           stage++;
         } else {
           stageSpeed(slowStage);
@@ -339,7 +338,7 @@ void ringDebug() {
   setCrossPos(-1);
   setTargetPos(0);
   stageSpeed(ringStage);
-  setStartTime((double)millis() - 55000);
+  setStartTime(millis() - 55000L);
   while (1) {
     toysInWater(seconds());
     if (moveToPos(getTargetPos()) && getTargetPos() != -1) {
@@ -379,14 +378,17 @@ void ringDebug() {
 }
 
 void PIDdebug() {
-  setSpeedScale(0.50);
-  int testTicks = 0;
+  long testMillis = 0;
+  int testStage = 0;
+  setStageTime(millis());
   while (1) {
+    stageSpeed(0);
     printCount++;   
-    testTicks = gatedKnobMap(6,0,2000);
+    testMillis = gatedKnobMap(7,0,5000);
+    testStage = gatedKnobMap(6,0,5);
     
-    if (wheelTicks < testTicks){
-    PID4follow();
+    if (stageMilliseconds() < testMillis){
+      PID4follow();
     } else {
       revStop();
     }
@@ -399,15 +401,20 @@ void PIDdebug() {
     }
 
     if(startbutton()){
-      wheelTicks = 0;
+      setStageTime(millis());
     }
     
     if (printCount > 400){
+      getQRDs();
       LCD.clear();
       printQRDs();
-      LCD.print(wheelTicks);
+      LCD.print(stageMilliseconds());
       LCD.setCursor(0,1);
-      LCD.print(testTicks);
+      LCD.print(testMillis);
+      LCD.print(" ");
+      LCD.print(testStage);
+      LCD.print(" ");
+      LCD.print(getSpeedScale());
 
     }
   }
