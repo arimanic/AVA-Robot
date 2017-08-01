@@ -8,7 +8,7 @@ int printCount;
 int stage;
 
 int mode = 0; // 0 for no debug, 1 for arm, 2 for ir, 3 for cross
-String modes[] = {"Regular" , "Debug arm" , "Debug IR", "Debug ring", "Debug zipline*"};
+String modes[] = {"Regular" , "Debug arm" , "Debug IR", "Debug ring", "Debug PID", "Calib Arm"};
 
 void setup()
 {
@@ -21,9 +21,11 @@ void setup()
   attachISR(INT3, ISR3);
   enableExternalInterrupt(INT1, FALLING);
   enableExternalInterrupt(INT2, FALLING);
-  enableExternalInterrupt(INT3, LOW);
+  enableExternalInterrupt(INT3, RISING);
   // set all variables and constants
-  initConsts(12.5, 0, 4, 2, 1100, 0.40, 0.60, 0.20, 1, 0);
+  // void initConsts( p,  i,  d,  g,  t,  flat,  ramp,  ring,
+  //                  smallErr,  medErr,  largeErr,  hugeErr,  armSpeed,  fineArmSpeed,  side);
+  initConsts(12.5, 0, 4, 2, 30, 0.50, 0.7, 0.25, 4, 8, 16, 24, 500, 700, 0);
   printCount = 0;
   moveBaseServo(76);
 }
@@ -60,7 +62,10 @@ void loop() { // final version. working as intended do not modify
       }
     }
     switch (mode) {
+      case 5:
+        armCalibrate();
       case 4:
+        PIDdebug();
         break;
       case 3:
         ringDebug();
@@ -101,6 +106,14 @@ void phase1() {
          setMotors(0 , 255 , 0); // hard left turn
        } else {
          setMotors(255 , 0 , 0); // hard right turn*/
+    //         stageSpeed(0);
+    //    if (seconds() < 4){
+    //      setMotors(255,255,0);
+    //    //PID4follow();
+    //    } else {
+    //      revStop();
+    //    }
+
 
     switch (stage) {
       case beforeGateStage:
@@ -111,14 +124,15 @@ void phase1() {
           // fast on flats leading up to gate
           stageSpeed(stage);
           PID4follow();
-        } else if (digitalRead(1)) { //gateStop()
+        } else if (gateStop()) { //gateStop()
           // Stop at gate and move to next stage
-          while (digitalRead(1)) {  // gateStop()
+          while (gateStop()) {  // gateStop()
             revStop();
           }
           wheelTicks = 0;
           stage++;
-        } else if (wheelTicks < beforeGateTicks + 40) {
+          
+        } else if (wheelTicks < beforeGateTicks + 100) {
           // Slow down if close
           stageSpeed(slowStage);
           PID4follow();
@@ -129,18 +143,19 @@ void phase1() {
         }
         break;
 
-      case afterGateStage:
+      case afterGateStage:        
         if (wheelTicks < afterGateTicks) {
           stageSpeed(stage);
           PID4follow();
         } else {
           wheelTicks = 0;
+          revStop();
           stage++;
         }
 
         break;
 
-      case onRampStage:
+      case onRampStage:        
         if (wheelTicks < onRampTicks) {
           stageSpeed(stage);
           PID4follow();
@@ -164,6 +179,7 @@ void phase1() {
         break;
 
       case ringStage:
+        crossTurn();
         phase2();
         break;
 
@@ -206,12 +222,29 @@ void phase2() {
   setCrossPos(-1);
   setTargetPos(0);
   stageSpeed(ringStage);
-  setStartTime((double)millis() - 55000);
+  setStartTime((double)millis());
   while (1) {
     if (moveToPos(getTargetPos()) && getTargetPos() != -1) {
-      delay(500);
+      delay(1000);
       setTargetPos(findNextToy(getCrossPos(), seconds()));
+    } else {
+      revStop();
+      // zipline find
     }
+
+    printCount++;
+    if (printCount > 500) {
+      printCount = 0;
+      LCD.clear();
+      printQRDs();
+      LCD.print(getTargetPos());
+      LCD.print(" ");
+      LCD.print(getCrossPos());
+      LCD.print(" ");
+      LCD.print(seconds());
+      LCD.print(" ");
+    }
+
     if (stopbutton()) {
       while (stopbutton()) {
       }
@@ -251,9 +284,9 @@ void armDebug() {
       LCD.print(" ");
       LCD.print(servo);
       LCD.print(" ");
-      LCD.print(analogRead(armBasePotPin) * 5.0 / 1024);
+      LCD.print(getRelLowerPos(pos));
       LCD.print(" ");
-      LCD.print(analogRead(armHingePotPin) * 5.0 / 1024);
+      LCD.print(getRelUpperPos(pos));
 
       LCD.setCursor(0, 1);
       LCD.print(atUpperPos(pos));
@@ -308,9 +341,9 @@ void ringDebug() {
   stageSpeed(ringStage);
   setStartTime((double)millis() - 55000);
   while (1) {
-
     toysInWater(seconds());
     if (moveToPos(getTargetPos()) && getTargetPos() != -1) {
+      delay(1000);
       // do the arm thing and then set the target to the next toy
       setTargetPos(findNextToy(getCrossPos(), seconds()));
     }
@@ -344,4 +377,77 @@ void ringDebug() {
     }
   }
 }
+
+void PIDdebug() {
+  setSpeedScale(0.50);
+  int testTicks = 0;
+  while (1) {
+    printCount++;   
+    testTicks = gatedKnobMap(6,0,2000);
+    
+    if (wheelTicks < testTicks){
+    PID4follow();
+    } else {
+      revStop();
+    }
+    
+    if(stopbutton()){
+      while(stopbutton()){
+        
+      }
+      menu();
+    }
+
+    if(startbutton()){
+      wheelTicks = 0;
+    }
+    
+    if (printCount > 400){
+      LCD.clear();
+      printQRDs();
+      LCD.print(wheelTicks);
+      LCD.setCursor(0,1);
+      LCD.print(testTicks);
+
+    }
+  }
+}
+
+void armCalibrate() {
+  double lowerVoltage;
+  double upperVoltage;
+
+  while (1) {
+    printCount++;
+    lowerVoltage = constrainNum(knobToVolt(7), lowerBaseBound, upperBaseBound);
+    upperVoltage = constrainNum(knobToVolt(6), lowerHingeBound, upperHingeBound);
+
+    moveUpperArm(upperVoltage);
+    moveLowerArm(lowerVoltage);
+
+    if (printCount > 400) {
+      LCD.clear();
+      LCD.print("L");
+      LCD.print(lowerVoltage);
+      LCD.print(" ");
+      LCD.print(getBaseMotorPot());
+      LCD.print(" ");
+      LCD.print(getRelLowerPos(lowerVoltage));
+
+      LCD.setCursor(0, 1);
+      LCD.print("U");
+      LCD.print(upperVoltage);
+      LCD.print(" ");
+      LCD.print(getHingeMotorPot());
+      LCD.print(" ");
+      LCD.print(getRelUpperPos(upperVoltage));
+    }
+    if (stopbutton()) {
+      while (stopbutton()) {
+      }
+      menu();
+    }
+  }
+}
+
 
