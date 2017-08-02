@@ -24,7 +24,14 @@ void setup() {
   // set all variables and constants
   // void initConsts( p,  i,  d,  g,  IR,  flat,  ramp,  ring,
   //                  smallErr,  medErr,  largeErr,  hugeErr,  armSpeed,  fineArmSpeed,  side);
-  initConsts(12.5, 0, 4, 2, 300, 1.0, 1.0, 0.35, 4, 8, 16, 24, 500, 700, 0);
+  //initConsts(12.5, 0, 4, 2, 300, 1.0, 1.0, 0.35, 4, 8, 16, 24, 500, 700, 0);
+  setPIDG(12.5, 0, 4, 2);
+  setIRThresh(300);
+  setSpeeds(1.0, 1.0, 0.35);
+  setErrors(4, 8, 16, 24);
+  setArmSpeeds(500, 700);
+  setSide(0);
+  
   printCount = 0;
   moveBaseServo(76);
 }
@@ -345,10 +352,11 @@ void ringDebug() {
   while (1) {
     toysInWater(seconds());
     nextPos = getTargetPos();
+    resetArmServo();
     
     if (moveToPos(nextPos) && nextPos != -1) {
       moveArm(nextPos);
-      moveArmServo();
+      activateArmServo();
       // do the arm thing and then set the target to the next toy
       setTargetPos(findNextToy(getCrossPos(), seconds()));
     }
