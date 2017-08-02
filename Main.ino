@@ -8,9 +8,9 @@ int printCount;
 int stage;
 
 int mode = 0; // 0 for no debug, 1 for arm, 2 for ir, 3 for cross
-String modes[] = {"Regular" , "Debug arm" , "Debug IR", "Debug ring", "Debug PID", "Calib Arm"};
+String modes[] = {"Regular" , "Debug arm" , "Debug IR", "Debug ring", "Debug PID", "Calib Arm", "Debug Motor"};
 
-void setup(){
+void setup() {
 #include <phys253setup.txt>
   Serial.begin(9600);
   pinMode(trigPin, OUTPUT);
@@ -22,9 +22,9 @@ void setup(){
   enableExternalInterrupt(INT2, FALLING);
   enableExternalInterrupt(INT3, FALLING);
   // set all variables and constants
-  // void initConsts( p,  i,  d,  g,  t,  flat,  ramp,  ring,
+  // void initConsts( p,  i,  d,  g,  IR,  flat,  ramp,  ring,
   //                  smallErr,  medErr,  largeErr,  hugeErr,  armSpeed,  fineArmSpeed,  side);
-  initConsts(12.5, 0, 4, 2, 30, 0.50, 0.7, 0.25, 4, 8, 16, 24, 500, 700, 0);
+  initConsts(12.5, 0, 4, 2, 300, 1.0, 1.0, 0.35, 4, 8, 16, 24, 500, 700, 0);
   printCount = 0;
   moveBaseServo(76);
 }
@@ -61,6 +61,8 @@ void loop() { // final version. working as intended do not modify
       }
     }
     switch (mode) {
+      case 6:
+        motorDebug();
       case 5:
         armCalibrate();
       case 4:
@@ -130,7 +132,7 @@ void phase1() {
           }
           setStageTime(millis());
           stage++;
-          
+
         } else if (stageMilliseconds() < beforeGateMillis + 300) {
           // Slow down if close
           stageSpeed(slowStage);
@@ -142,7 +144,7 @@ void phase1() {
         }
         break;
 
-      case afterGateStage:        
+      case afterGateStage:
         if (stageMilliseconds() < afterGateMillis) {
           stageSpeed(stage);
           PID4follow();
@@ -154,7 +156,7 @@ void phase1() {
 
         break;
 
-      case onRampStage:        
+      case onRampStage:
         if (stageMilliseconds() < onRampMillis) {
           stageSpeed(stage);
           PID4follow();
@@ -196,7 +198,7 @@ void phase1() {
       LCD.setCursor(0, 1);
 
       LCD.print(" ");
-      LCD.print(wheelTicks);
+      LCD.print(stageMilliseconds());
       LCD.print(" ");
       if (getLastTurn()) {
         LCD.print("L");
@@ -337,12 +339,16 @@ void ringDebug() {
   extern bool toyFallen[];
   setCrossPos(-1);
   setTargetPos(0);
+  int nextPos = getTargetPos();
   stageSpeed(ringStage);
   setStartTime(millis() - 55000L);
   while (1) {
     toysInWater(seconds());
-    if (moveToPos(getTargetPos()) && getTargetPos() != -1) {
-      delay(1000);
+    nextPos = getTargetPos();
+    
+    if (moveToPos(nextPos) && nextPos != -1) {
+      moveArm(nextPos);
+      moveArmServo();
       // do the arm thing and then set the target to the next toy
       setTargetPos(findNextToy(getCrossPos(), seconds()));
     }
@@ -353,7 +359,7 @@ void ringDebug() {
       printCount = 0;
       LCD.clear();
       printQRDs();
-      LCD.print(getTargetPos());
+      LCD.print(nextPos);
       LCD.print(" ");
       LCD.print(getCrossPos());
       LCD.print(" ");
@@ -382,34 +388,34 @@ void PIDdebug() {
   int testStage = 0;
   setStageTime(millis());
   while (1) {
-    stageSpeed(0);
-    printCount++;   
-    testMillis = gatedKnobMap(7,0,5000);
-    testStage = gatedKnobMap(6,0,5);
-    
-    if (stageMilliseconds() < testMillis){
+    stageSpeed(testStage);
+    printCount++;
+    testMillis = gatedKnobMap(7, 0, 5000);
+    testStage = gatedKnobMap(6, 0, 5);
+
+    if (stageMilliseconds() < testMillis) {
       PID4follow();
     } else {
       revStop();
     }
-    
-    if(stopbutton()){
-      while(stopbutton()){
-        
+
+    if (stopbutton()) {
+      while (stopbutton()) {
+
       }
       menu();
     }
 
-    if(startbutton()){
+    if (startbutton()) {
       setStageTime(millis());
     }
-    
-    if (printCount > 400){
+
+    if (printCount > 400) {
       getQRDs();
       LCD.clear();
       printQRDs();
       LCD.print(stageMilliseconds());
-      LCD.setCursor(0,1);
+      LCD.setCursor(0, 1);
       LCD.print(testMillis);
       LCD.print(" ");
       LCD.print(testStage);
@@ -457,4 +463,18 @@ void armCalibrate() {
   }
 }
 
+void motorDebug() {
+  int x = 0;
+  int y = 0;
+  setSpeedScale(1);
+  while (1) {
+    x = gatedKnobMap(7, -255, 255);
+    y = gatedKnobMap(6, -255, 255);
+    setMotors(x, y, 0);
+    LCD.clear();
+    LCD.print(x);
+    LCD.print(" ");
+    LCD.print(y);
+  }
+}
 
