@@ -8,7 +8,7 @@ int printCount;
 int stage;
 
 int mode = 0; // 0 for no debug, 1 for arm, 2 for ir, 3 for cross
-String modes[] = {"Regular" , "Debug arm" , "Debug IR", "Debug ring", "Debug PID", "Calib Arm", "Debug Motor"};
+String modes[] = {"Regular" , "Debug arm" , "Debug IR", "Debug ring", "Debug PID", "Calib Arm", "Debug Motor", "Debug Zipline"};
 
 void setup() {
 #include <phys253setup.txt>
@@ -22,18 +22,18 @@ void setup() {
   enableExternalInterrupt(INT2, FALLING);
   enableExternalInterrupt(INT3, FALLING);
   // set all variables and constants
-  // void initConsts( p,  i,  d,  g,  IR,  flat,  ramp,  ring,
+  /* void initConsts( p,  i,  d,  g,  IR,  flat,  ramp,  ring,
   //                  smallErr,  medErr,  largeErr,  hugeErr,  armSpeed,  fineArmSpeed,  side);
-  //initConsts(12.5, 0, 4, 2, 300, 1.0, 1.0, 0.35, 4, 8, 16, 24, 500, 700, 0);
-  setPIDG(12.5, 0, 4, 2);
+  //initConsts(12.5, 0, 4, 2, 300, 1.0, 1.0, 0.35, 4, 8, 16, 24, 500, 700, 0);*/
+  setPIDG(8, 0, 4, 2);
   setIRThresh(300);
   setSpeeds(1.0, 1.0, 0.35);
-  setErrors(4, 8, 16, 24);
+  setErrors(10, 12, 16, 24);
   setArmSpeeds(500, 700);
   setSide(0);
   
   printCount = 0;
-  moveBaseServo(76);
+  //moveBaseServo(76);
 }
 
 void loop() { // final version. working as intended do not modify
@@ -68,6 +68,8 @@ void loop() { // final version. working as intended do not modify
       }
     }
     switch (mode) {
+      case 7:
+        ziplineDebug();
       case 6:
         motorDebug();
       case 5:
@@ -483,6 +485,22 @@ void motorDebug() {
     LCD.print(x);
     LCD.print(" ");
     LCD.print(y);
+  }
+}
+
+void ziplineDebug(){
+  moveArm(drivePos);
+  if (atBothPos(drivePos)){
+    while(1){
+      printCount++;
+
+      moveArm(zipPos);
+      
+      if (printCount > 400){
+        LCD.clear();
+        printQRDs();
+      }
+    }
   }
 }
 

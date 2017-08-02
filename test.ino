@@ -9,7 +9,6 @@ double constrainNum(double val, double min, double max){
   if (val > max){
     return max;
   }
-
   return val;
 }
 
