@@ -13,8 +13,6 @@ String modes[] = {"Regular" , "Debug arm" , "Debug IR", "Debug ring", "Debug PID
 void setup() {
 #include <phys253setup.txt>
   Serial.begin(9600);
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
   attachISR(INT1, ISR1);
   attachISR(INT2, ISR2);
   attachISR(INT3, ISR3);
@@ -25,7 +23,7 @@ void setup() {
   /* void initConsts( p,  i,  d,  g,  IR,  flat,  ramp,  ring,
   //                  smallErr,  medErr,  largeErr,  hugeErr,  armSpeed,  fineArmSpeed,  side);
   //initConsts(12.5, 0, 4, 2, 300, 1.0, 1.0, 0.35, 4, 8, 16, 24, 500, 700, 0);*/
-  setPIDG(8, 0, 4, 2);
+  setPIDG(5, 0, 4, 2);
   setIRThresh(300);
   setSpeeds(1.0, 1.0, 0.35);
   setErrors(10, 12, 16, 24);
@@ -103,7 +101,6 @@ void phase1() {
   // Phase 1 setup
   setStartTime(millis());
   setStageTime(millis());
-  alrdyStop = false;
   stage = 0;
   //moveUpperArm(drivePos);
   //moveLowerArm(drivePos);
@@ -111,20 +108,6 @@ void phase1() {
 
   LCD.clear();
   while (1) {
-    /* if (sonarInterrupt) {
-       if (offEdgeTurn == "L") {
-         setMotors(0 , 255 , 0); // hard left turn
-       } else {
-         setMotors(255 , 0 , 0); // hard right turn*/
-    //         stageSpeed(0);
-    //    if (seconds() < 4){
-    //      setMotors(255,255,0);
-    //    //PID4follow();
-    //    } else {
-    //      revStop();
-    //    }
-
-
     switch (stage) {
       case beforeGateStage:
         /* go fast until you get close to the gate. Slow down when close.
@@ -359,6 +342,10 @@ void ringDebug() {
     if (moveToPos(nextPos) && nextPos != -1) {
       moveArm(nextPos);
       activateArmServo();
+      
+      delay(3000);
+     // stepMotors(100);
+     //turnAround();
       // do the arm thing and then set the target to the next toy
       setTargetPos(findNextToy(getCrossPos(), seconds()));
     }
@@ -383,12 +370,21 @@ void ringDebug() {
     }
 
     if (startbutton()) {  // push start to reset the timer
-      while (startbutton()) {
-      }
-      setStartTime((double)millis() - 55000);
+      
+      setStartTime((double)millis() - 57000);
       setCrossPos(-1);
       setTargetPos(0);
       toysInWater(seconds());
+      while (startbutton()) {
+        Serial.print(seconds());
+      }
+    }
+
+    if (stopbutton()){
+      while(stopbutton()){
+        
+      }
+      menu();
     }
   }
 }
@@ -404,6 +400,7 @@ void PIDdebug() {
     testStage = gatedKnobMap(6, 0, 5);
 
     if (stageMilliseconds() < testMillis) {
+      setStopFlag(0);
       PID4follow();
     } else {
       revStop();

@@ -18,8 +18,7 @@
 // Variables for internal interrupts and logic checks.
 // All of these should be set during setup or phase transitions
 
-//IR vars
-bool alrdyStop;
+
 
 // TIMING VARIABLE
 
