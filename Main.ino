@@ -21,15 +21,15 @@ void setup() {
   enableExternalInterrupt(INT3, FALLING);
   // set all variables and constants
   /* void initConsts( p,  i,  d,  g,  IR,  flat,  ramp,  ring,
-  //                  smallErr,  medErr,  largeErr,  hugeErr,  armSpeed,  fineArmSpeed,  side);
-  //initConsts(12.5, 0, 4, 2, 300, 1.0, 1.0, 0.35, 4, 8, 16, 24, 500, 700, 0);*/
+    //                  smallErr,  medErr,  largeErr,  hugeErr,  armSpeed,  fineArmSpeed,  side);
+    //initConsts(12.5, 0, 4, 2, 300, 1.0, 1.0, 0.35, 4, 8, 16, 24, 500, 700, 0);*/
   setPIDG(5, 0, 4, 2);
   setIRThresh(300);
   setSpeeds(1.0, 1.0, 0.35);
   setErrors(10, 12, 16, 24);
-  setArmSpeeds(500, 700);
-  setSide(0);
-  
+  setArmSpeeds(580, 840);
+  setSide(1);
+
   printCount = 0;
   //moveBaseServo(76);
 }
@@ -53,6 +53,7 @@ void loop() { // final version. working as intended do not modify
   /////////////////////////////
   ///// Robot AI //////////////
   /////////////////////////////
+  moveArm(gatePos);
   if (startbutton()) {
     delay(300);
     while (startbutton()) {
@@ -115,6 +116,13 @@ void phase1() {
 
         if (stageMilliseconds() < beforeGateMillis) {
           // fast on flats leading up to gate
+
+          if (stageMilliseconds() < 400) {
+            moveArm(gatePos);
+          } else {
+            moveArm(irPos);
+          }
+
           stageSpeed(stage);
           PID4follow();
         } else if (gateStop()) { //gateStop()
@@ -127,16 +135,19 @@ void phase1() {
 
         } else if (stageMilliseconds() < beforeGateMillis + 300) {
           // Slow down if close
+          moveArm(irPos);
           stageSpeed(slowStage);
           PID4follow();
         } else {
           // if you get too close stop and wait for the IRs to go 10khz
           // to ensure that you have a full 5 seconds to get throughs
+          moveArm(irPos);
           revStop();
         }
         break;
 
       case afterGateStage:
+        moveArm(drivePos);
         if (stageMilliseconds() < afterGateMillis) {
           stageSpeed(stage);
           PID4follow();
@@ -149,6 +160,7 @@ void phase1() {
         break;
 
       case onRampStage:
+        moveArm(drivePos);
         if (stageMilliseconds() < onRampMillis) {
           stageSpeed(stage);
           PID4follow();
@@ -159,6 +171,7 @@ void phase1() {
         break;
 
       case afterRampStage:
+        moveArm(drivePos);
         if (stageMilliseconds() < afterRampMillis) {
           stageSpeed(stage);
           PID4follow();
@@ -172,6 +185,9 @@ void phase1() {
         break;
 
       case ringStage:
+        stageSpeed(stage);
+        revStop();
+        //delay(3000);
         crossTurn();
         phase2();
         break;
@@ -210,19 +226,18 @@ void phase1() {
 }
 
 void phase2() {
-  stageSpeed(stage);
-  crossTurn();
   setCrossPos(-1);
   setTargetPos(0);
-  stageSpeed(ringStage);
   setStartTime((double)millis());
   while (1) {
     if (moveToPos(getTargetPos()) && getTargetPos() != -1) {
       delay(1000);
       setTargetPos(findNextToy(getCrossPos(), seconds()));
-    } else {
-      revStop();
-      // zipline find
+    } else if (getTargetPos() == -1) {
+      if (moveToPos(4)) {
+        zipline();
+      }
+
     }
 
     printCount++;
@@ -236,6 +251,7 @@ void phase2() {
       LCD.print(" ");
       LCD.print(seconds());
       LCD.print(" ");
+      LCD.print(getSpeedScale());
     }
 
     if (stopbutton()) {
@@ -249,6 +265,14 @@ void phase2() {
       }
       phase1();
     }
+  }
+}
+
+void zipline() {
+  while (1) {
+    LCD.clear();
+    printQRDs();
+    setMotors(0, 0, 0);
   }
 }
 
@@ -267,7 +291,7 @@ void armDebug() {
   int servo;
   while (1) {
     printCount++;
-    pos = map(analogRead(6), 0, 1023, 0, 4);
+    pos = gatedKnobMap(6, 0, 9);
     servo = map(analogRead(7), 0, 1023, -2, 182);
     if (printCount > 400) {
       printCount = 0;
@@ -338,14 +362,14 @@ void ringDebug() {
     toysInWater(seconds());
     nextPos = getTargetPos();
     resetArmServo();
-    
+
     if (moveToPos(nextPos) && nextPos != -1) {
       moveArm(nextPos);
       activateArmServo();
-      
+
       delay(3000);
-     // stepMotors(100);
-     //turnAround();
+      stepMotors(100);
+      //turnAround();
       // do the arm thing and then set the target to the next toy
       setTargetPos(findNextToy(getCrossPos(), seconds()));
     }
@@ -370,7 +394,7 @@ void ringDebug() {
     }
 
     if (startbutton()) {  // push start to reset the timer
-      
+
       setStartTime((double)millis() - 57000);
       setCrossPos(-1);
       setTargetPos(0);
@@ -380,9 +404,9 @@ void ringDebug() {
       }
     }
 
-    if (stopbutton()){
-      while(stopbutton()){
-        
+    if (stopbutton()) {
+      while (stopbutton()) {
+
       }
       menu();
     }
@@ -436,36 +460,112 @@ void PIDdebug() {
 void armCalibrate() {
   double lowerVoltage;
   double upperVoltage;
+  int servoVal;
+  int tempServo;
+  int servo0 = 0;
+  int servo1 = 0;
+  int servo2 = 0;
+  int menuCounter = 0;
 
   while (1) {
     printCount++;
     lowerVoltage = constrainNum(knobToVolt(7), lowerBaseBound, upperBaseBound);
     upperVoltage = constrainNum(knobToVolt(6), lowerHingeBound, upperHingeBound);
+    servoVal = gatedKnobMap(6, 0, 180);
 
-    moveUpperArm(upperVoltage);
-    moveLowerArm(lowerVoltage);
+    switch (menuCounter % 5) {
+      case 0:
+        moveUpperArm(upperVoltage);
+        moveLowerArm(lowerVoltage);
 
-    if (printCount > 400) {
-      LCD.clear();
-      LCD.print("L");
-      LCD.print(lowerVoltage);
-      LCD.print(" ");
-      LCD.print(getBaseMotorPot());
-      LCD.print(" ");
-      LCD.print(getRelLowerPos(lowerVoltage));
+        if (printCount > 400) {
+          printCount = 0;
+          LCD.clear();
+          LCD.print("L");
+          LCD.print(lowerVoltage);
+          LCD.print(" ");
+          LCD.print(getBaseMotorPot());
+          LCD.print(" ");
+          LCD.print(getRelLowerPos(lowerVoltage));
 
-      LCD.setCursor(0, 1);
-      LCD.print("U");
-      LCD.print(upperVoltage);
-      LCD.print(" ");
-      LCD.print(getHingeMotorPot());
-      LCD.print(" ");
-      LCD.print(getRelUpperPos(upperVoltage));
+          LCD.setCursor(0, 1);
+          LCD.print("U");
+          LCD.print(upperVoltage);
+          LCD.print(" ");
+          LCD.print(getHingeMotorPot());
+          LCD.print(" ");
+          LCD.print(getRelUpperPos(upperVoltage));
+        }
+        break;
+
+      case 1:
+        RCServo0.write(servo0);
+        tempServo = constrainNum(servoVal, 0, 180);
+        if (startbutton()) {
+          while (startbutton()) {
+          }
+          servo0 = tempServo;
+        }
+        if (printCount > 400) {
+          printCount = 0;
+          LCD.clear();
+          LCD.print("Servo 0 was ");
+          LCD.print(servo0);
+          LCD.setCursor(0, 1);
+          LCD.print(tempServo);
+        }
+        break;
+
+      case 2:
+        RCServo1.write(servo1);
+        tempServo = constrainNum(servoVal, 0, 180);
+        if (startbutton()) {
+          while (startbutton()) {
+          }
+          servo1 = tempServo;
+        }
+        if (printCount > 400) {
+          printCount = 0;
+          LCD.clear();
+          LCD.print("Servo 1 was ");
+          LCD.print(servo1);
+          LCD.setCursor(0, 1);
+          LCD.print(tempServo);
+        }
+        break;
+
+      case 3:
+        RCServo2.write(servo2);
+        tempServo = constrainNum(servoVal, 0, 180);
+        if (startbutton()) {
+          while (startbutton()) {
+          }
+          servo2 = tempServo;
+        }
+        if (printCount > 400) {
+          printCount = 0;
+          LCD.clear();
+          LCD.print("Servo 2 was ");
+          LCD.print(servo2);
+          LCD.setCursor(0, 1);
+          LCD.print(tempServo);
+        }
+        break;
+
+      case 4:
+        while (stopbutton()) {
+
+        }
+        menu();
+        menuCounter++;
+        break;
+
     }
+
     if (stopbutton()) {
       while (stopbutton()) {
       }
-      menu();
+      menuCounter++;
     }
   }
 }
@@ -485,15 +585,15 @@ void motorDebug() {
   }
 }
 
-void ziplineDebug(){
+void ziplineDebug() {
   moveArm(drivePos);
-  if (atBothPos(drivePos)){
-    while(1){
+  if (atBothPos(drivePos)) {
+    while (1) {
       printCount++;
 
       moveArm(zipPos);
-      
-      if (printCount > 400){
+
+      if (printCount > 400) {
         LCD.clear();
         printQRDs();
       }
