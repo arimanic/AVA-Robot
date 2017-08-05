@@ -204,7 +204,7 @@ void phase1() {
       case ringStage:
         stageSpeed(stage);
         revStop();
-        //delay(3000);
+        delay(3000);
         crossTurn();
         phase2();
         break;
@@ -231,7 +231,7 @@ void phase1() {
         LCD.print("R");
       }
       LCD.print(" ");
-      LCD.print(timeLeft(millis()));
+      LCD.print(leftSide());
     }
 
     if (stopbutton()) {
@@ -260,6 +260,7 @@ void phase2() {
 
     nextPos = getTargetPos();
     if (moveToPos(nextPos) && nextPos != -1) {
+      delay(1000);
       setTargetPos(findNextToy(getCrossPos(), seconds()));
     } else if (getTargetPos() == -1) {
       if (moveToPos(4)) {
