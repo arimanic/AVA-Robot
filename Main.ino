@@ -66,6 +66,7 @@ void loop() { // final version. working as intended do not modify
         LCD.print(modes[mode]);
       }
     }
+    setStartTime(millis());
     switch (mode) {
       case 7:
         ziplineDebug();
@@ -94,53 +95,69 @@ void loop() { // final version. working as intended do not modify
 
 void phase1() {
 
-  /* Phase 1 moves the robot from the start point to the ring junction.
-      It stops the robot at the 10 kHz gate, but only once.
-      Edge sensors are used through external interrupts to prevent
-  */
+  // Phase 1 moves the robot from the start point to the ring junction.
 
   // Phase 1 setup
-  setStartTime(millis());
   setStageTime(millis());
+  setIRTimer(millis() - 5000); // this sets the time left on the gate to 0 by default at the start 
+                               //to prevent accidentally driving through the gate if you never pick up IR
   stage = 0;
-  //moveUpperArm(drivePos);
-  //moveLowerArm(drivePos);
   // end of setup
-
-  LCD.clear();
   while (1) {
+    if (startbutton()) {
+      while (startbutton()) {
+        moveArm(gatePos);
+      }
+      phase1();
+    }
+
     switch (stage) {
       case beforeGateStage:
-        /* go fast until you get close to the gate. Slow down when close.
-          Stop while IR is on and then move to next stage when it turns off */
+        if (gateStop()) {
+          setIRTimer(millis());
+        }
 
+        // drive through the first gate regardless of IR gate state
         if (stageMilliseconds() < beforeGateMillis) {
-          // fast on flats leading up to gate
-
           if (stageMilliseconds() < 400) {
             moveArm(gatePos);
           } else {
             moveArm(irPos);
           }
-
           stageSpeed(stage);
           PID4follow();
-        } else if (gateStop()) { //gateStop()
+
+        // Stopping at the gate is the first priority. after stoppinng, move to the next stage
+        } else if (gateStop()) {
           // Stop at gate and move to next stage
-          while (gateStop()) {  // gateStop()
+          while (gateStop()) {
+            setIRTimer(millis());
+            moveArm(irPos);
             revStop();
           }
           setStageTime(millis());
           stage++;
 
-        } else if (stageMilliseconds() < beforeGateMillis + 300) {
+          // if you have enough time left to make it through the gate you should go for it, but make sure to increment to the next stage and slow down
+          } else if (timeLeft(millis()) > 1) {
+          if (stageMilliseconds() < beforeGateMillis + 200) {
+            PID4follow();
+            moveArm(irPos);
+          } else {
+            setStageTime(millis());
+            stage++;
+          }
+          
+        // if you have moved close to the gate, and you dont have enough time left to get through you should slowly approach the gate
+        } else if (stageMilliseconds() < beforeGateMillis + 300 && timeLeft(millis()) < 1) {
           // Slow down if close
           moveArm(irPos);
           stageSpeed(slowStage);
           PID4follow();
-        } else {
+
           // if you get too close stop and wait for the IRs to go 10khz
           // to ensure that you have a full 5 seconds to get throughs
+        } else {         
           moveArm(irPos);
           revStop();
         }
@@ -195,7 +212,7 @@ void phase1() {
     }
 
     printCount++;
-    if (printCount > 400) {
+    if (printCount > 300) {
       printCount = 0;
       LCD.clear();
       printQRDs();
@@ -213,6 +230,8 @@ void phase1() {
       } else {
         LCD.print("R");
       }
+      LCD.print(" ");
+      LCD.print(timeLeft(millis()));
     }
 
     if (stopbutton()) {
@@ -228,10 +247,19 @@ void phase1() {
 void phase2() {
   setCrossPos(-1);
   setTargetPos(0);
-  setStartTime((double)millis());
+  setStageTime((double)millis()); //probably dont need this line
+  int nextPos;
   while (1) {
-    if (moveToPos(getTargetPos()) && getTargetPos() != -1) {
-      delay(1000);
+    // push start to start a new run from the beginning
+    if (startbutton()) {
+      while (startbutton()) {
+        moveArm(gatePos);
+      }
+      phase1();
+    }
+
+    nextPos = getTargetPos();
+    if (moveToPos(nextPos) && nextPos != -1) {
       setTargetPos(findNextToy(getCrossPos(), seconds()));
     } else if (getTargetPos() == -1) {
       if (moveToPos(4)) {
@@ -245,7 +273,7 @@ void phase2() {
       printCount = 0;
       LCD.clear();
       printQRDs();
-      LCD.print(getTargetPos());
+      LCD.print(nextPos);
       LCD.print(" ");
       LCD.print(getCrossPos());
       LCD.print(" ");
@@ -270,334 +298,335 @@ void phase2() {
 
 void zipline() {
   while (1) {
+    moveArm(zipPos);
     LCD.clear();
     printQRDs();
     setMotors(0, 0, 0);
   }
 }
 
-void sonarTest() {
-  while (1) {
-    outPulse();
-    LCD.clear();
-    LCD.print(" ");
-    LCD.print(getOffTime());
-    LCD.setCursor(0, 1);
-  }
-}
-
-void armDebug() {
-  int pos;
-  int servo;
-  while (1) {
-    printCount++;
-    pos = gatedKnobMap(6, 0, 9);
-    servo = map(analogRead(7), 0, 1023, -2, 182);
-    if (printCount > 400) {
-      printCount = 0;
-
-      LCD.clear();
-      LCD.print(pos);
-      LCD.print(" ");
-      LCD.print(servo);
-      LCD.print(" ");
-      LCD.print(getRelLowerPos(pos));
-      LCD.print(" ");
-      LCD.print(getRelUpperPos(pos));
-
-      LCD.setCursor(0, 1);
-      LCD.print(atUpperPos(pos));
-      LCD.print(" ");
-      LCD.print(atLowerPos(pos));
-
-    }
-    moveLowerArm(pos);
-    moveUpperArm(pos);
-    moveBaseServo(servo);
-
-  }
-}
-
-void irDebug() {
-  while (1) {
-    if (stopbutton()) {
-      while (stopbutton()) {
-      }
-      menu();
-    }
-
-    moveBaseServo(gatedKnobMap(7, 0, 180));
-
-    printCount++;
-    if (printCount > 4000) {
-      printCount = 0;
-      LCD.clear();
-      LCD.print(analogRead(IR0pin));
-      LCD.print(" ");
-      LCD.print(analogRead(IR1pin));
-      LCD.print(" ");
-      LCD.print(analogRead(IR2pin));
-      LCD.print(" ");
-
-      LCD.setCursor(0, 1);
-      LCD.print(gateStop());
-    }
-
-    if (stopbutton()) {
-      while (stopbutton()) {
-      }
-      menu();
-    }
-  }
-}
-
-void ringDebug() {
-  extern bool toyFallen[];
-  setCrossPos(-1);
-  setTargetPos(0);
-  int nextPos = getTargetPos();
-  stageSpeed(ringStage);
-  setStartTime(millis() - 55000L);
-  while (1) {
-    toysInWater(seconds());
-    nextPos = getTargetPos();
-    resetArmServo();
-
-    if (moveToPos(nextPos) && nextPos != -1) {
-      moveArm(nextPos);
-      activateArmServo();
-
-      delay(3000);
-      stepMotors(100);
-      //turnAround();
-      // do the arm thing and then set the target to the next toy
-      setTargetPos(findNextToy(getCrossPos(), seconds()));
-    }
-
-
-    printCount++;
-    if (printCount > 500) {
-      printCount = 0;
-      LCD.clear();
-      printQRDs();
-      LCD.print(nextPos);
-      LCD.print(" ");
-      LCD.print(getCrossPos());
-      LCD.print(" ");
-      LCD.print(seconds());
-      LCD.print(" ");
-
-      LCD.setCursor(0, 1);
-      for (int i = 0; i < numToys; i++) {
-        LCD.print(toyFallen[i]);
-      }
-    }
-
-    if (startbutton()) {  // push start to reset the timer
-
-      setStartTime((double)millis() - 57000);
-      setCrossPos(-1);
-      setTargetPos(0);
-      toysInWater(seconds());
-      while (startbutton()) {
-        Serial.print(seconds());
-      }
-    }
-
-    if (stopbutton()) {
-      while (stopbutton()) {
-
-      }
-      menu();
-    }
-  }
-}
-
-void PIDdebug() {
-  long testMillis = 0;
-  int testStage = 0;
-  setStageTime(millis());
-  while (1) {
-    stageSpeed(testStage);
-    printCount++;
-    testMillis = gatedKnobMap(7, 0, 5000);
-    testStage = gatedKnobMap(6, 0, 5);
-
-    if (stageMilliseconds() < testMillis) {
-      setStopFlag(0);
-      PID4follow();
-    } else {
-      revStop();
-    }
-
-    if (stopbutton()) {
-      while (stopbutton()) {
-
-      }
-      menu();
-    }
-
-    if (startbutton()) {
-      setStageTime(millis());
-    }
-
-    if (printCount > 400) {
-      getQRDs();
-      LCD.clear();
-      printQRDs();
-      LCD.print(stageMilliseconds());
-      LCD.setCursor(0, 1);
-      LCD.print(testMillis);
-      LCD.print(" ");
-      LCD.print(testStage);
-      LCD.print(" ");
-      LCD.print(getSpeedScale());
-
-    }
-  }
-}
-
-void armCalibrate() {
-  double lowerVoltage;
-  double upperVoltage;
-  int servoVal;
-  int tempServo;
-  int servo0 = 0;
-  int servo1 = 0;
-  int servo2 = 0;
-  int menuCounter = 0;
-
-  while (1) {
-    printCount++;
-    lowerVoltage = constrainNum(knobToVolt(7), lowerBaseBound, upperBaseBound);
-    upperVoltage = constrainNum(knobToVolt(6), lowerHingeBound, upperHingeBound);
-    servoVal = gatedKnobMap(6, 0, 180);
-
-    switch (menuCounter % 5) {
-      case 0:
-        moveUpperArm(upperVoltage);
-        moveLowerArm(lowerVoltage);
-
-        if (printCount > 400) {
-          printCount = 0;
-          LCD.clear();
-          LCD.print("L");
-          LCD.print(lowerVoltage);
-          LCD.print(" ");
-          LCD.print(getBaseMotorPot());
-          LCD.print(" ");
-          LCD.print(getRelLowerPos(lowerVoltage));
-
-          LCD.setCursor(0, 1);
-          LCD.print("U");
-          LCD.print(upperVoltage);
-          LCD.print(" ");
-          LCD.print(getHingeMotorPot());
-          LCD.print(" ");
-          LCD.print(getRelUpperPos(upperVoltage));
-        }
-        break;
-
-      case 1:
-        RCServo0.write(servo0);
-        tempServo = constrainNum(servoVal, 0, 180);
-        if (startbutton()) {
-          while (startbutton()) {
-          }
-          servo0 = tempServo;
-        }
-        if (printCount > 400) {
-          printCount = 0;
-          LCD.clear();
-          LCD.print("Servo 0 was ");
-          LCD.print(servo0);
-          LCD.setCursor(0, 1);
-          LCD.print(tempServo);
-        }
-        break;
-
-      case 2:
-        RCServo1.write(servo1);
-        tempServo = constrainNum(servoVal, 0, 180);
-        if (startbutton()) {
-          while (startbutton()) {
-          }
-          servo1 = tempServo;
-        }
-        if (printCount > 400) {
-          printCount = 0;
-          LCD.clear();
-          LCD.print("Servo 1 was ");
-          LCD.print(servo1);
-          LCD.setCursor(0, 1);
-          LCD.print(tempServo);
-        }
-        break;
-
-      case 3:
-        RCServo2.write(servo2);
-        tempServo = constrainNum(servoVal, 0, 180);
-        if (startbutton()) {
-          while (startbutton()) {
-          }
-          servo2 = tempServo;
-        }
-        if (printCount > 400) {
-          printCount = 0;
-          LCD.clear();
-          LCD.print("Servo 2 was ");
-          LCD.print(servo2);
-          LCD.setCursor(0, 1);
-          LCD.print(tempServo);
-        }
-        break;
-
-      case 4:
-        while (stopbutton()) {
-
-        }
-        menu();
-        menuCounter++;
-        break;
-
-    }
-
-    if (stopbutton()) {
-      while (stopbutton()) {
-      }
-      menuCounter++;
-    }
-  }
-}
-
-void motorDebug() {
-  int x = 0;
-  int y = 0;
-  setSpeedScale(1);
-  while (1) {
-    x = gatedKnobMap(7, -255, 255);
-    y = gatedKnobMap(6, -255, 255);
-    setMotors(x, y, 0);
-    LCD.clear();
-    LCD.print(x);
-    LCD.print(" ");
-    LCD.print(y);
-  }
-}
-
-void ziplineDebug() {
-  moveArm(drivePos);
-  if (atBothPos(drivePos)) {
-    while (1) {
-      printCount++;
-
-      moveArm(zipPos);
-
-      if (printCount > 400) {
-        LCD.clear();
-        printQRDs();
-      }
-    }
-  }
-}
+//void sonarTest() {
+//  while (1) {
+//    outPulse();
+//    LCD.clear();
+//    LCD.print(" ");
+//    LCD.print(getOffTime());
+//    LCD.setCursor(0, 1);
+//  }
+//}
+//
+//void armDebug() {
+//  int pos;
+//  int servo;
+//  while (1) {
+//    printCount++;
+//    pos = gatedKnobMap(6, 0, 9);
+//    servo = map(analogRead(7), 0, 1023, -2, 182);
+//    if (printCount > 400) {
+//      printCount = 0;
+//
+//      LCD.clear();
+//      LCD.print(pos);
+//      LCD.print(" ");
+//      LCD.print(servo);
+//      LCD.print(" ");
+//      LCD.print(getRelLowerPos(pos));
+//      LCD.print(" ");
+//      LCD.print(getRelUpperPos(pos));
+//
+//      LCD.setCursor(0, 1);
+//      LCD.print(atUpperPos(pos));
+//      LCD.print(" ");
+//      LCD.print(atLowerPos(pos));
+//
+//    }
+//    moveLowerArm(pos);
+//    moveUpperArm(pos);
+//    moveBaseServo(servo);
+//
+//  }
+//}
+//
+//void irDebug() {
+//  while (1) {
+//    if (stopbutton()) {
+//      while (stopbutton()) {
+//      }
+//      menu();
+//    }
+//
+//    moveBaseServo(gatedKnobMap(7, 0, 180));
+//
+//    printCount++;
+//    if (printCount > 4000) {
+//      printCount = 0;
+//      LCD.clear();
+//      LCD.print(analogRead(IR0pin));
+//      LCD.print(" ");
+//      LCD.print(analogRead(IR1pin));
+//      LCD.print(" ");
+//      LCD.print(analogRead(IR2pin));
+//      LCD.print(" ");
+//
+//      LCD.setCursor(0, 1);
+//      LCD.print(gateStop());
+//    }
+//
+//    if (stopbutton()) {
+//      while (stopbutton()) {
+//      }
+//      menu();
+//    }
+//  }
+//}
+//
+//void ringDebug() {
+//  extern bool toyFallen[];
+//  setCrossPos(-1);
+//  setTargetPos(0);
+//  int nextPos = getTargetPos();
+//  stageSpeed(ringStage);
+//  setStartTime(millis() - 55000L);
+//  while (1) {
+//    toysInWater(seconds());
+//    nextPos = getTargetPos();
+//    resetArmServo();
+//
+//    if (moveToPos(nextPos) && nextPos != -1) {
+//      moveArm(nextPos);
+//      activateArmServo();
+//
+//      delay(3000);
+//      stepMotors(100);
+//      //turnAround();
+//      // do the arm thing and then set the target to the next toy
+//      setTargetPos(findNextToy(getCrossPos(), seconds()));
+//    }
+//
+//
+//    printCount++;
+//    if (printCount > 500) {
+//      printCount = 0;
+//      LCD.clear();
+//      printQRDs();
+//      LCD.print(nextPos);
+//      LCD.print(" ");
+//      LCD.print(getCrossPos());
+//      LCD.print(" ");
+//      LCD.print(seconds());
+//      LCD.print(" ");
+//
+//      LCD.setCursor(0, 1);
+//      for (int i = 0; i < numToys; i++) {
+//        LCD.print(toyFallen[i]);
+//      }
+//    }
+//
+//    if (startbutton()) {  // push start to reset the timer
+//
+//      setStartTime((double)millis() - 57000);
+//      setCrossPos(-1);
+//      setTargetPos(0);
+//      toysInWater(seconds());
+//      while (startbutton()) {
+//        Serial.print(seconds());
+//      }
+//    }
+//
+//    if (stopbutton()) {
+//      while (stopbutton()) {
+//
+//      }
+//      menu();
+//    }
+//  }
+//}
+//
+//void PIDdebug() {
+//  long testMillis = 0;
+//  int testStage = 0;
+//  setStageTime(millis());
+//  while (1) {
+//    stageSpeed(testStage);
+//    printCount++;
+//    testMillis = gatedKnobMap(7, 0, 5000);
+//    testStage = gatedKnobMap(6, 0, 5);
+//
+//    if (stageMilliseconds() < testMillis) {
+//      setStopFlag(0);
+//      PID4follow();
+//    } else {
+//      revStop();
+//    }
+//
+//    if (stopbutton()) {
+//      while (stopbutton()) {
+//
+//      }
+//      menu();
+//    }
+//
+//    if (startbutton()) {
+//      setStageTime(millis());
+//    }
+//
+//    if (printCount > 400) {
+//      getQRDs();
+//      LCD.clear();
+//      printQRDs();
+//      LCD.print(stageMilliseconds());
+//      LCD.setCursor(0, 1);
+//      LCD.print(testMillis);
+//      LCD.print(" ");
+//      LCD.print(testStage);
+//      LCD.print(" ");
+//      LCD.print(getSpeedScale());
+//
+//    }
+//  }
+//}
+//
+//void armCalibrate() {
+//  double lowerVoltage;
+//  double upperVoltage;
+//  int servoVal;
+//  int tempServo;
+//  int servo0 = 0;
+//  int servo1 = 0;
+//  int servo2 = 0;
+//  int menuCounter = 0;
+//
+//  while (1) {
+//    printCount++;
+//    lowerVoltage = constrainNum(knobToVolt(7), lowerBaseBound, upperBaseBound);
+//    upperVoltage = constrainNum(knobToVolt(6), lowerHingeBound, upperHingeBound);
+//    servoVal = gatedKnobMap(6, 0, 180);
+//
+//    switch (menuCounter % 5) {
+//      case 0:
+//        moveUpperArm(upperVoltage);
+//        moveLowerArm(lowerVoltage);
+//
+//        if (printCount > 400) {
+//          printCount = 0;
+//          LCD.clear();
+//          LCD.print("L");
+//          LCD.print(lowerVoltage);
+//          LCD.print(" ");
+//          LCD.print(getBaseMotorPot());
+//          LCD.print(" ");
+//          LCD.print(getRelLowerPos(lowerVoltage));
+//
+//          LCD.setCursor(0, 1);
+//          LCD.print("U");
+//          LCD.print(upperVoltage);
+//          LCD.print(" ");
+//          LCD.print(getHingeMotorPot());
+//          LCD.print(" ");
+//          LCD.print(getRelUpperPos(upperVoltage));
+//        }
+//        break;
+//
+//      case 1:
+//        RCServo0.write(servo0);
+//        tempServo = constrainNum(servoVal, 0, 180);
+//        if (startbutton()) {
+//          while (startbutton()) {
+//          }
+//          servo0 = tempServo;
+//        }
+//        if (printCount > 400) {
+//          printCount = 0;
+//          LCD.clear();
+//          LCD.print("Servo 0 was ");
+//          LCD.print(servo0);
+//          LCD.setCursor(0, 1);
+//          LCD.print(tempServo);
+//        }
+//        break;
+//
+//      case 2:
+//        RCServo1.write(servo1);
+//        tempServo = constrainNum(servoVal, 0, 180);
+//        if (startbutton()) {
+//          while (startbutton()) {
+//          }
+//          servo1 = tempServo;
+//        }
+//        if (printCount > 400) {
+//          printCount = 0;
+//          LCD.clear();
+//          LCD.print("Servo 1 was ");
+//          LCD.print(servo1);
+//          LCD.setCursor(0, 1);
+//          LCD.print(tempServo);
+//        }
+//        break;
+//
+//      case 3:
+//        RCServo2.write(servo2);
+//        tempServo = constrainNum(servoVal, 0, 180);
+//        if (startbutton()) {
+//          while (startbutton()) {
+//          }
+//          servo2 = tempServo;
+//        }
+//        if (printCount > 400) {
+//          printCount = 0;
+//          LCD.clear();
+//          LCD.print("Servo 2 was ");
+//          LCD.print(servo2);
+//          LCD.setCursor(0, 1);
+//          LCD.print(tempServo);
+//        }
+//        break;
+//
+//      case 4:
+//        while (stopbutton()) {
+//
+//        }
+//        menu();
+//        menuCounter++;
+//        break;
+//
+//    }
+//
+//    if (stopbutton()) {
+//      while (stopbutton()) {
+//      }
+//      menuCounter++;
+//    }
+//  }
+//}
+//
+//void motorDebug() {
+//  int x = 0;
+//  int y = 0;
+//  setSpeedScale(1);
+//  while (1) {
+//    x = gatedKnobMap(7, -255, 255);
+//    y = gatedKnobMap(6, -255, 255);
+//    setMotors(x, y, 0);
+//    LCD.clear();
+//    LCD.print(x);
+//    LCD.print(" ");
+//    LCD.print(y);
+//  }
+//}
+//
+//void ziplineDebug() {
+//  moveArm(drivePos);
+//  if (atBothPos(drivePos)) {
+//    while (1) {
+//      printCount++;
+//
+//      moveArm(zipPos);
+//
+//      if (printCount > 400) {
+//        LCD.clear();
+//        printQRDs();
+//      }
+//    }
+//  }
+//}
 

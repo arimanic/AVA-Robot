@@ -12,6 +12,7 @@
 #include <sonar.h>
 #include <timing.h>
 #include <TinahIO.h>
+#include <robotDebug.h>
 
 
 
