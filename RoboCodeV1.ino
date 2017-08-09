@@ -15,14 +15,6 @@
 #include <robotDebug.h>
 
 
-
-// Variables for internal interrupts and logic checks.
-// All of these should be set during setup or phase transitions
-
-
-
-// TIMING VARIABLE
-
 // Sonar interrupt variables
 bool sonarInterrupt = false;
 String offEdgeTurn;
