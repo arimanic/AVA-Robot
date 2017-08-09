@@ -25,7 +25,7 @@ void setup() {
     //                  smallErr,  medErr,  largeErr,  hugeErr,  armSpeed,  fineArmSpeed,  side);
     //initConsts(12.5, 0, 4, 2, 300, 1.0, 1.0, 0.35, 4, 8, 16, 24, 500, 700, 0);*/
   setPIDG(5, 0, 4, 2);
-  setIRThresh(400);
+  setIRThresh(350);
   setSpeeds(0.7, 1.0, 0.35);
   setErrors(10, 12, 16, 24);
   setArmSpeeds(10000, 10000);
@@ -160,7 +160,7 @@ void phase1() {
         LCD.print("R");
       }
       LCD.print(" ");
-      LCD.print(tiltSwitch());
+      LCD.print(timeLeft(millis()));
     }
 
     if (stopbutton()) {
@@ -319,7 +319,7 @@ void beforeGate() {
 
 void afterGate() {
   moveArm(drivePos);
-  if (tiltSwitch() || stageMilliseconds() < 500) {
+  if (tiltSwitch() || stageMilliseconds() < 1500) {
     stageSpeed(stage);
     PID4follow();
   } else {
@@ -371,6 +371,39 @@ void ring() {
 }
 
 
+//void protoGate() {
+//  long pushTime;
+//  if (gateStop()) {
+//    setIRTimer(millis());
+//  }
+//
+//  if (stageMilliseconds() < 600) {
+//    moveArm(gatePos);
+//    if (atBothPos(gatePos)) {
+//      stageSpeed(stage);
+//      PID4follow();
+//    } else {
+//      //setStageTime(millis());
+//    }
+//  } else if (gateStop() && stageMilliseconds() > 1100) {
+//    while (gateStop()) {
+//      setIRTimer(millis());
+//      moveArm(irPos);
+//      revStop();
+//    }
+//    setStageTime(millis());
+//    stage++;
+//  } else if (stageMilliseconds() < beforeGateMillis + 500) {
+//    moveArm(irPos);
+//    stageSpeed(slowStage);
+//    PID4follow();
+//  } else {
+//    moveArm(irPos);
+//    revStop();
+//  }
+//}
+
+
 void protoGate() {
   long pushTime;
   if (gateStop()) {
@@ -378,6 +411,7 @@ void protoGate() {
   }
 
   if (stageMilliseconds() < 600) {
+    Serial.print(1);
     moveArm(gatePos);
     if (atBothPos(gatePos)) {
       stageSpeed(stage);
@@ -385,7 +419,8 @@ void protoGate() {
     } else {
       //setStageTime(millis());
     }
-  } else if (gateStop() && atBothPos(irPos)) {
+  } else if (gateStop() && stageMilliseconds() > 1100) {
+     Serial.print(2);
     while (gateStop()) {
       setIRTimer(millis());
       moveArm(irPos);
@@ -394,6 +429,7 @@ void protoGate() {
     setStageTime(millis());
     stage++;
   } else if (timeLeft(millis()) > 1500 ) {
+     Serial.print(3);
     moveArm(irPos);
     if (atBothPos(irPos) && !gateStop()) {
       pushTime = millis();
@@ -409,10 +445,12 @@ void protoGate() {
       PID4follow();
     }
   } else if (stageMilliseconds() < beforeGateMillis + 500) {
+     Serial.print(4);
     moveArm(irPos);
     stageSpeed(slowStage);
     PID4follow();
   } else {
+     Serial.print(5);
     moveArm(irPos);
     revStop();
   }
