@@ -25,19 +25,20 @@ void setup() {
     //                  smallErr,  medErr,  largeErr,  hugeErr,  armSpeed,  fineArmSpeed,  side);
     //initConsts(12.5, 0, 4, 2, 300, 1.0, 1.0, 0.35, 4, 8, 16, 24, 500, 700, 0);*/
   setPIDG(5, 0, 4, 2);
-  setIRThresh(350);
+  setIRThresh(450);
   setSpeeds(0.7, 1.0, 0.35);
   setErrors(10, 12, 16, 24);
   setSide(0);
   setArmSpeeds(1000, 2500);
   printCount = 0;
-  RCServo1.write(30);
+  resetArmServo();
   armSafetyFlag = true;
 }
 
 void loop() { // final version. working as intended do not modify
   // put your main code here, to run repeatedly:
   // Push stop to go into the menu
+  resetArmServo();
   if (stopbutton()) {
     while (stopbutton()) {
     }
@@ -92,7 +93,7 @@ void loop() { // final version. working as intended do not modify
         armDebug();
         break;
       case 0:
-        phase2();
+        phase1();
         break;
     }
   }
@@ -119,7 +120,7 @@ void phase1() {
 
     switch (stage) {
       case beforeGateStage:
-        protoGate();
+        hardGateStop();
         break;
 
       case afterGateStage:
@@ -160,7 +161,7 @@ void phase1() {
         LCD.print("R");
       }
       LCD.print(" ");
-      LCD.print(timeLeft(millis()));
+      //LCD.print(gateStop());
     }
 
     if (stopbutton()) {
@@ -174,60 +175,137 @@ void phase1() {
 }
 
 void phase2() {
-  stageSpeed(ringStage);
-  moveBaseServo(70);
-  setCrossPos(-1);
-  setTargetPos(0);
-  int nextPos;
-  setArmSafe(false);
-  resetArmServo();
-  while (1) {
-    // push start to start a new run from the beginning
-    if (startbutton()) {
-      setArmSafe(false);
-      while (startbutton()) {
-        moveArm(gatePos);
-      }
-      phase1();
-    }
-    resetArmServo();
-    nextPos = getTargetPos();
-    if (moveToPos(nextPos) && nextPos != -1) {
-      PID4step(50);
-      revStop();
-      while (!atBothPos(nextPos)) {
-        moveArm(nextPos);
-      }
-      moveArm(nextPos);
-      activateArmServo();
-      delay(500);
-      setTargetPos(findNextToy(getCrossPos(), seconds()));
-    } else if (getTargetPos() == -1) {
+  if (leftSide()) {
+
+    stageSpeed(ringStage);
+    while (!atBothPos(zipPos)) {
       moveArm(zipPos);
-      if (moveToPos(4) && atBothPos(zipPos)) { //!!!
-        zipline();
+    }
+    motor.stop_all();
+    moveBaseServo(0);
+    setCrossPos(-2);
+    setTargetPos(0);
+    int nextPos;
+    setArmSafe(false);
+    resetArmServo();
+    while (1) {
+      // push start to start a new run from the beginning
+      if (startbutton()) {
+        setArmSafe(false);
+        while (startbutton()) {
+          moveArm(gatePos);
+        }
+        phase1();
+      }
+      activateArmServo();
+      nextPos = getTargetPos();
+      if (moveToPos(nextPos) && nextPos != -1) {
+        PID4step(40);
+        revStop();
+        while (!atBothPos(nextPos)) {
+          moveArm(nextPos);
+        }
+        moveArm(nextPos);
+        resetArmServo();
+        delay(500);
+        setTargetPos(findNextToy(getCrossPos(), seconds()));
+      } else if (getTargetPos() == -1) {
+        if (!atBothPos(zipPos)) {
+          moveUpperArm(zipPos);
+          moveLowerArm(zipPos);
+          stableLift();
+        } else {
+          if (moveToPos(4) && atBothPos(zipPos)) { //!!!
+            zipline();
+          }
+        }
       }
 
-    }
-
-    printCount++;
-    if (printCount > 500) {
-      printCount = 0;
-      LCD.clear();
-      printQRDs();
-      LCD.print(nextPos);
-      LCD.print(" ");
-      LCD.print(getCrossPos());
-      LCD.print(" ");
-      LCD.print(seconds());
-      LCD.print(" ");
-      LCD.print(getSpeedScale());
-    }
-
-    if (stopbutton()) {
-      while (stopbutton()) {
+      printCount++;
+      if (printCount > 500) {
+        printCount = 0;
+        LCD.clear();
+        printQRDs();
+        LCD.print(nextPos);
+        LCD.print(" ");
+        LCD.print(getCrossPos());
+        LCD.print(" ");
+        LCD.print(seconds());
+        LCD.print(" ");
+        LCD.print(getSpeedScale());
       }
-      menu();
+
+      if (stopbutton()) {
+        while (stopbutton()) {
+        }
+        menu();
+      }
+    }
+  }
+  else {
+    stageSpeed(ringStage);
+    while (!atBothPos(zipPos)) {
+      moveArm(zipPos);
+    }
+    motor.stop_all();
+    moveBaseServo(0);
+    setCrossPos(-1);
+    setTargetPos(0);
+    int nextPos;
+    setArmSafe(false);
+    resetArmServo();
+    while (1) {
+      // push start to start a new run from the beginning
+      if (startbutton()) {
+        setArmSafe(false);
+        while (startbutton()) {
+          moveArm(gatePos);
+        }
+        phase1();
+      }
+      activateArmServo();
+      nextPos = getTargetPos();
+      if (moveToPos(nextPos) && nextPos != -1) {
+        PID4step(40);
+        revStop();
+        while (!atBothPos(nextPos)) {
+          moveArm(nextPos);
+        }
+        moveArm(nextPos);
+        resetArmServo();
+        delay(500);
+        setTargetPos(findNextToy(getCrossPos(), seconds()));
+      } else if (getTargetPos() == -1) {
+        if (!atBothPos(zipPos)) {
+          moveUpperArm(zipPos);
+          moveLowerArm(zipPos);
+          stableLift();
+        } else {
+          if (moveToPos(4) && atBothPos(zipPos)) { //!!!
+            zipline();
+          }
+        }
+      }
+
+      printCount++;
+      if (printCount > 500) {
+        printCount = 0;
+        LCD.clear();
+        printQRDs();
+        LCD.print(nextPos);
+        LCD.print(" ");
+        LCD.print(getCrossPos());
+        LCD.print(" ");
+        LCD.print(seconds());
+        LCD.print(" ");
+        LCD.print(getSpeedScale());
+      }
+
+      if (stopbutton()) {
+        while (stopbutton()) {
+        }
+        menu();
+      }
     }
   }
 }
@@ -265,65 +343,14 @@ void zipline() {
   }
 }
 
-void beforeGate() {
-  if (gateStop()) {
-    setIRTimer(millis());
-  }
-
-  // drive through the first gate regardless of IR gate state
-  if (stageMilliseconds() < beforeGateMillis) {
-    if (stageMilliseconds() < 600) {
-      moveArm(gatePos);
-      stageSpeed(stage);
-    } else {
-      if (!atBothPos(irPos)) {
-        stageSpeed(slowStage);
-      } else {
-        stageSpeed(stage);
-      }
-      moveArm(irPos);
-    }
-
-    PID4follow();
-    // Stopping at the gate is the first priority. after stopping, move to the next stage
-  } else if (gateStop()) {
-    // Stop at gate and move to next stage
-    while (gateStop()) {
-      setIRTimer(millis());
-      moveArm(irPos);
-      revStop();
-    }
-    setStageTime(millis());
-    stage++;
-
-    // if you have enough time left to make it through the gate you should go for it, but make sure to increment to the next stage and slow down
-  } else if (timeLeft(millis()) > 1000) {
-    if (stageMilliseconds() < 1300) {
-      stageSpeed(stage);
-      PID4follow();
-      moveArm(irPos);
-    } else {
-      setStageTime(millis());
-      stage++;
-    }
-
-    // if you have moved close to the gate, and you dont have enough time left to get through you should slowly approach the gate
-  } else if (stageMilliseconds() < beforeGateMillis + 300 && timeLeft(millis()) < 1000) {
-    // Slow down if close
-    moveArm(irPos);
-    stageSpeed(slowStage);
-    PID4follow();
-
-    // if you get too close stop and wait for the IRs to go 10khz
-    // to ensure that you have a full 5 seconds to get throughs
-  } else {
-    moveArm(irPos);
-    revStop();
-  }
-}
 
 void afterGate() {
-  moveArm(drivePos);
+  if(stageMilliseconds() > 300){
+    moveArm(drivePos);
+  } else {
+    moveUpperArm(drivePos);
+    moveLowerArm(drivePos);
+  }
   if (tiltSwitch() || stageMilliseconds() < 1500) {
     stageSpeed(stage);
     PID4follow();
@@ -338,7 +365,7 @@ void afterGate() {
 
 void onRamp() {
   moveArm(drivePos);
-  if (tiltSwitch() && stageMilliseconds() > 2000) {
+  if (tiltSwitch() && stageMilliseconds() > 1200) {
     delay(50);
     if (tiltSwitch()) {
       setStageTime(millis());
@@ -352,15 +379,18 @@ void onRamp() {
 }
 
 void afterRamp() {
-  moveArm(drivePos);
+
   if (stageMilliseconds() < afterRampMillis) {
+    moveArm(drivePos);
     stageSpeed(stage);
     PID4follow();
-  } else if (atCross()) {
+  } else if (anyCross()) {
+    moveArm(zipPos);
     setStageTime(millis());
     stage++;
   } else {
-    stageSpeed(slowStage);
+    moveArm(zipPos);
+    setSpeedScale(0.25);
     PID4follow();
   }
 }
@@ -424,14 +454,14 @@ void protoGate() {
       //setStageTime(millis());
     }
   } else if (gateStop() && stageMilliseconds() > 900) {
+    revStop();
     while (gateStop()) {
       setIRTimer(millis());
       moveArm(irPos);
-      revStop();
     }
     motor.stop_all();
-    LCD.print("wait");
-    delay(10000);
+    // LCD.print("wait");
+    //  delay(10000);
     setStageTime(millis());
     stage++;
   } else if (timeLeft(millis()) > 2000 ) {
@@ -442,9 +472,9 @@ void protoGate() {
       if (millis() - pushTime < 800) {
         PID4follow();
       } else {
-        LCD.print("run");
-        motor.stop_all();
-        delay(10000);
+        //  LCD.print("run");
+        //   motor.stop_all();
+        //  delay(10000);
         setStageTime(millis());
         stage++;
       }
@@ -460,5 +490,32 @@ void protoGate() {
     moveArm(irPos);
     revStop();
   }
+}
+
+void hardGateStop() {
+  if (stageMilliseconds() < 800) {
+    moveArm(gatePos);
+  } else {
+    moveArm(irPos);
+  }
+
+  if (stageMilliseconds() < 1400) {
+    if (stageMilliseconds() < 1300) {
+      stageSpeed(stage);
+    } else {
+      stageSpeed(slowStage);
+    }
+    PID4follow();
+  } else {
+    revStop();
+    if (gateStop() && atBothPos(irPos)) {
+      while (gateStop()) {
+        moveArm(irPos);
+      }
+      setStageTime(millis());
+      stage++;
+    }
+  }
+
 }
 
