@@ -28,10 +28,10 @@ void setup() {
   setIRThresh(350);
   setSpeeds(0.7, 1.0, 0.35);
   setErrors(10, 12, 16, 24);
-  setArmSpeeds(10000, 10000);
   setSide(0);
-
+  setArmSpeeds(1000, 2500);
   printCount = 0;
+  RCServo1.write(30);
   armSafetyFlag = true;
 }
 
@@ -92,7 +92,7 @@ void loop() { // final version. working as intended do not modify
         armDebug();
         break;
       case 0:
-        phase1();
+        phase2();
         break;
     }
   }
@@ -174,6 +174,8 @@ void phase1() {
 }
 
 void phase2() {
+  stageSpeed(ringStage);
+  moveBaseServo(70);
   setCrossPos(-1);
   setTargetPos(0);
   int nextPos;
@@ -188,21 +190,21 @@ void phase2() {
       }
       phase1();
     }
-
+    resetArmServo();
     nextPos = getTargetPos();
     if (moveToPos(nextPos) && nextPos != -1) {
-      PID4step(200);
+      PID4step(50);
       revStop();
       while (!atBothPos(nextPos)) {
         moveArm(nextPos);
       }
+      moveArm(nextPos);
       activateArmServo();
-      delay(100);
-      resetArmServo();
       delay(500);
       setTargetPos(findNextToy(getCrossPos(), seconds()));
     } else if (getTargetPos() == -1) {
-      if (moveToPos(4)) { //!!!
+      moveArm(zipPos);
+      if (moveToPos(4) && atBothPos(zipPos)) { //!!!
         zipline();
       }
 
@@ -231,9 +233,10 @@ void phase2() {
 }
 
 void zipline() {
+  bool zipAttach = false;
+
   while (1) {
     while (!moveToPos(zipPos)) {
-
     }
     revStop();
     moveLowerArm(zipPos);
@@ -243,16 +246,18 @@ void zipline() {
     printQRDs();
     setMotors(0, 0, 0);
     if (atBothPos(zipPos)) {
-      while (atCross()) {
-        setMotors(255, 255, 0);
-      }
+      while (!zipAttach) {
+        if (leftSide()) {
+          turnAround(300);
+        }
+        while (atCross()) {
+          setMotors(255, 255, 0);
+        }
 
-      while (!atCross()) {
-        setMotors(100, 100, 0);
-      }
-      revStop();
-
-      while (1) {
+        while (!atCross()) {
+          setMotors(100, 100, 0);
+        }
+        revStop();
         LCD.clear();
         printQRDs();
       }
@@ -411,7 +416,6 @@ void protoGate() {
   }
 
   if (stageMilliseconds() < 600) {
-    Serial.print(1);
     moveArm(gatePos);
     if (atBothPos(gatePos)) {
       stageSpeed(stage);
@@ -419,17 +423,18 @@ void protoGate() {
     } else {
       //setStageTime(millis());
     }
-  } else if (gateStop() && stageMilliseconds() > 1100) {
-     Serial.print(2);
+  } else if (gateStop() && stageMilliseconds() > 900) {
     while (gateStop()) {
       setIRTimer(millis());
       moveArm(irPos);
       revStop();
     }
+    motor.stop_all();
+    LCD.print("wait");
+    delay(10000);
     setStageTime(millis());
     stage++;
-  } else if (timeLeft(millis()) > 1500 ) {
-     Serial.print(3);
+  } else if (timeLeft(millis()) > 2000 ) {
     moveArm(irPos);
     if (atBothPos(irPos) && !gateStop()) {
       pushTime = millis();
@@ -437,6 +442,9 @@ void protoGate() {
       if (millis() - pushTime < 800) {
         PID4follow();
       } else {
+        LCD.print("run");
+        motor.stop_all();
+        delay(10000);
         setStageTime(millis());
         stage++;
       }
@@ -445,12 +453,10 @@ void protoGate() {
       PID4follow();
     }
   } else if (stageMilliseconds() < beforeGateMillis + 500) {
-     Serial.print(4);
     moveArm(irPos);
     stageSpeed(slowStage);
     PID4follow();
   } else {
-     Serial.print(5);
     moveArm(irPos);
     revStop();
   }
